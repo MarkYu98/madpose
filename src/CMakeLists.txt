@@ -2,7 +2,6 @@
 set(SOURCES
     bindings.cpp
     solver.cpp
-    pose_scale_shift_estimator.cpp 
     hybrid_pose_estimator.cpp
     hybrid_pose_shared_focal_estimator.cpp
     hybrid_pose_two_focal_estimator.cpp

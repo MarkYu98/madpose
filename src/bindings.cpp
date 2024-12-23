@@ -6,7 +6,6 @@
 
 #include <RansacLib/ransac.h>
 #include "solver.h"
-#include "pose_scale_shift_estimator.h"
 #include "hybrid_pose_estimator.h"
 #include "hybrid_pose_shared_focal_estimator.h"
 #include "hybrid_pose_two_focal_estimator.h"
@@ -154,20 +153,6 @@ void bind_estimator(py::module& m) {
     .def("R", &PoseScaleOffsetTwoFocal::R)
     .def("t", &PoseScaleOffsetTwoFocal::t);
 
-    // py::class_<PointCloudPoseScaleOffsetOptimizer>(m, "PointCloudPoseScaleOffsetOptimizer")
-    // .def(py::init<const Eigen::MatrixXd&, const Eigen::MatrixXd&, const Eigen::VectorXd&, const Eigen::VectorXd&, const Eigen::Matrix3d&, const Eigen::Vector3d&, const double&, const double&, const double&, const OptimizerConfig&>())
-    // .def("SetUp", &PointCloudPoseScaleOffsetOptimizer::SetUp)
-    // .def("Solve", &PointCloudPoseScaleOffsetOptimizer::Solve)
-    // .def("GetScale", &PointCloudPoseScaleOffsetOptimizer::GetScale)
-    // .def("GetOffsets", &PointCloudPoseScaleOffsetOptimizer::GetOffsets)
-    // .def("GetTransform", &PointCloudPoseScaleOffsetOptimizer::GetTransform)
-    // .def("GetRotation", &PointCloudPoseScaleOffsetOptimizer::GetRotation)
-    // .def("GetRotationQuaternion", &PointCloudPoseScaleOffsetOptimizer::GetRotationQuaternion)
-    // .def("GetTranslation", &PointCloudPoseScaleOffsetOptimizer::GetTranslation)
-    // .def("GetInitialCost", &PointCloudPoseScaleOffsetOptimizer::GetInitialCost)
-    // .def("GetFinalCost", &PointCloudPoseScaleOffsetOptimizer::GetFinalCost)
-    // .def("IsSolutionUsable", &PointCloudPoseScaleOffsetOptimizer::IsSolutionUsable);
-
     m.def("estimate_scale_and_pose", &estimate_scale_and_pose, "X"_a, "Y"_a, "W"_a);
     m.def("solve_scale_and_shift", &solve_scale_and_shift, "x_homo"_a, "y_homo"_a, "depth_x"_a, "depth_y"_a);
     m.def("solve_scale_and_shift_shared_focal", &solve_scale_and_shift_shared_focal, "x_homo"_a, "y_homo"_a, "depth_x"_a, "depth_y"_a);
@@ -177,8 +162,6 @@ void bind_estimator(py::module& m) {
         "x_homo"_a, "y_homo"_a, "depth_x"_a, "depth_y"_a);
     m.def("estimate_scale_shift_pose_two_focal", &estimate_scale_shift_pose_two_focal_wrapper,
         "x_homo"_a, "y_homo"_a, "depth_x"_a, "depth_y"_a);
-    m.def("EstimatePoseScaleOffset", &EstimatePoseScaleOffset, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a,
-        "K0"_a, "K1"_a, "options"_a);
     m.def("HybridEstimatePoseAndScale", &HybridEstimatePoseAndScale, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a,  
         "K0"_a, "K1"_a, "options"_a, "est_config"_a = EstimatorConfig());
     m.def("HybridEstimatePoseScaleOffset", &HybridEstimatePoseScaleOffset, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a, 

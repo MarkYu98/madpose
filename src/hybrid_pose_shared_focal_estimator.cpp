@@ -190,7 +190,6 @@ int HybridPoseSharedFocalEstimator3::NonMinimalSolver(const std::vector<std::vec
         return 0;
     }
     SharedFocalOptimizerConfig config;
-    config.use_geometric = false;
     config.solver_options.max_num_iterations = 25;
     config.use_sampson = true;
     config.use_reprojection = true;
@@ -203,7 +202,8 @@ int HybridPoseSharedFocalEstimator3::NonMinimalSolver(const std::vector<std::vec
     SharedFocalOptimizer3 optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
         *solution, config);
     optim.SetUp();
-    if (!optim.Solve()) return 0;
+    if (!optim.Solve()) 
+        return 0;
     *solution = optim.GetSolution();
 
     return 1;
@@ -261,7 +261,6 @@ void HybridPoseSharedFocalEstimator3::LeastSquares(const std::vector<std::vector
     }
     
     SharedFocalOptimizerConfig config;
-    config.use_geometric = false;
     config.use_sampson = true;
     config.use_reprojection = true;
     config.solver_options.max_num_iterations = 25;
@@ -275,7 +274,8 @@ void HybridPoseSharedFocalEstimator3::LeastSquares(const std::vector<std::vector
     SharedFocalOptimizer3 optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
         *model, config);
     optim.SetUp();
-    if (!optim.Solve()) return;
+    if (!optim.Solve()) 
+        return;
     *model = optim.GetSolution();
 }
 

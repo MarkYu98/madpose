@@ -3,7 +3,6 @@
 
 #include <RansacLib/ransac.h>
 #include "hybrid_ransac.h"
-#include "pose_scale_shift_estimator.h"
 #include "solver.h"
 #include "optimizer.h"
 #include "estimator_config.h"
@@ -43,16 +42,17 @@ public:
 
     void min_sample_sizes(std::vector<std::vector<int>>* min_sample_sizes) const {
         min_sample_sizes->resize(2);
-        min_sample_sizes->at(0) = {3, 0};
-        min_sample_sizes->at(1) = {0, 5};
+        min_sample_sizes->at(0) = {3, 3, 0};
+        min_sample_sizes->at(1) = {0, 0, 5};
     }
 
-    inline int num_data_types() const { return 2; }
+    inline int num_data_types() const { return 3; }
 
     void num_data(std::vector<int>* num_data) const {
-        num_data->resize(2);
+        num_data->resize(3);
         num_data->at(0) = x0_.cols();
         num_data->at(1) = x0_.cols();
+        num_data->at(2) = x0_.cols();
     }
 
     void solver_probabilities(std::vector<double>* probabilities) const {
@@ -94,53 +94,9 @@ protected:
     std::vector<double> squared_inlier_thresholds_;
 };
 
-class HybridPoseEstimator3 : public HybridPoseEstimator {
+class HybridPoseEstimatorScaleOnly {
 public:
-    HybridPoseEstimator3(const std::vector<Eigen::Vector2d> &x0, const std::vector<Eigen::Vector2d> &x1,
-                         const std::vector<double> &depth0, const std::vector<double> &depth1, 
-                         const Eigen::Vector2d &min_depth, 
-                         const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1, 
-                         const double &sampson_squared_weight = 1.0,
-                         const std::vector<double> &squared_inlier_thresholds = {},
-                         const EstimatorConfig &est_config = EstimatorConfig()) : 
-                            HybridPoseEstimator(x0, x1, depth0, depth1, min_depth, 
-                                K0, K1, sampson_squared_weight, squared_inlier_thresholds, est_config) {}
-
-    void min_sample_sizes(std::vector<std::vector<int>>* min_sample_sizes) const {
-        min_sample_sizes->resize(2);
-        min_sample_sizes->at(0) = {3, 3, 0};
-        min_sample_sizes->at(1) = {0, 0, 5};
-    }
-
-    inline int num_data_types() const { return 3; }
-
-    void num_data(std::vector<int>* num_data) const {
-        num_data->resize(3);
-        num_data->at(0) = x0_.cols();
-        num_data->at(1) = x0_.cols();
-        num_data->at(2) = x0_.cols();
-    }
-
-    int MinimalSolver(const std::vector<std::vector<int>>& sample,
-                      const int solver_idx, std::vector<PoseScaleOffset>* models) const {
-        std::vector<std::vector<int>> sample_2 = {sample[0], sample[2]};
-        return HybridPoseEstimator::MinimalSolver(sample_2, solver_idx, models);
-    }
-
-    // Returns 0 if no model could be estimated and 1 otherwise.
-    // Implemented by a simple linear least squares solver.
-    int NonMinimalSolver(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffset* model) const;
-
-    // Evaluates the line on the i-th data point.
-    double EvaluateModelOnPoint(const PoseScaleOffset& model, int t, int i, bool is_for_inlier=false) const;
-
-    // Linear least squares solver. 
-    void LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffset* model) const;
-};
-
-class HybridPoseEstimatorScaleOnly3 {
-public:
-    HybridPoseEstimatorScaleOnly3(const std::vector<Eigen::Vector2d> &x0, const std::vector<Eigen::Vector2d> &x1,
+    HybridPoseEstimatorScaleOnly(const std::vector<Eigen::Vector2d> &x0, const std::vector<Eigen::Vector2d> &x1,
                                 const std::vector<double> &depth0, const std::vector<double> &depth1, 
                                 const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1, 
                                 const double &sampson_squared_weight = 1.0,
@@ -162,7 +118,7 @@ public:
         }
     }  
 
-    ~HybridPoseEstimatorScaleOnly3() {}
+    ~HybridPoseEstimatorScaleOnly() {}
 
     inline int num_minimal_solvers() const { return 2; }
 
