@@ -4,7 +4,7 @@
 #include "solver.h"
 #include "hybrid_pose_shared_focal_estimator.h"
 
-namespace acmpose {
+namespace madpose {
 
 std::pair<PoseScaleOffsetSharedFocal, ransac_lib::HybridRansacStatistics> 
 HybridEstimatePoseScaleOffsetSharedFocal(
@@ -32,19 +32,14 @@ HybridEstimatePoseScaleOffsetSharedFocal(
     ransac_options.squared_inlier_thresholds_[0] /= norm_scale * norm_scale;
     ransac_options.squared_inlier_thresholds_[1] /= norm_scale * norm_scale;
 
+    // Change to "three data types"
     ransac_options.data_type_weights_[1] *= 2 * ransac_options.squared_inlier_thresholds_[0] / ransac_options.squared_inlier_thresholds_[1];
     double sampson_squared_weight = ransac_options.data_type_weights_[1];
-
-    // ransac_options.data_type_weights_[1] *= 0.5;
-    // HybridSharedFocalPoseEstimator solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
-    //    norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_);
-    
     ransac_options.data_type_weights_.push_back(ransac_options.data_type_weights_[1]);
-    // ransac_options.data_type_weights_.push_back(ransac_options.squared_inlier_thresholds_[0] / 1e-2);
     ransac_options.squared_inlier_thresholds_.push_back(ransac_options.squared_inlier_thresholds_[1]);
-    // ransac_options.squared_inlier_thresholds_.push_back(1e-2);
     ransac_options.data_type_weights_[1] = ransac_options.data_type_weights_[0];
     ransac_options.squared_inlier_thresholds_[1] = ransac_options.squared_inlier_thresholds_[0];
+
     HybridSharedFocalPoseEstimator solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
         norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_, est_config);
 
@@ -227,4 +222,4 @@ void HybridSharedFocalPoseEstimator::LeastSquares(const std::vector<std::vector<
     *model = optim.GetSolution();
 }
 
-} // namespace acmpose
+} // namespace madpose

@@ -7,7 +7,7 @@
 #include "solver.h"
 #include "hybrid_pose_two_focal_estimator.h"
 
-namespace acmpose {
+namespace madpose {
 
 static std::pair<double, double> bougnoux_focals(const Eigen::Matrix3d &F) {
     Eigen::Vector3d p1 = Eigen::Vector3d(0.0, 0.0, 1.0);
@@ -58,35 +58,26 @@ HybridEstimatePoseScaleOffsetTwoFocal(
 
     Eigen::Matrix3d T1, T2;
     double norm_scale = poselib::normalize_points(x0_norm, x1_norm, T1, T2, true, false, true);
-    // double norm_scale = poselib::normalize_points(x0_norm, x1_norm, T1, T2, true, true, true);
 
     ransac_options.squared_inlier_thresholds_[0] /= norm_scale * norm_scale;
     ransac_options.squared_inlier_thresholds_[1] /= norm_scale * norm_scale;
 
+    // Change to "three data types"
     ransac_options.data_type_weights_[1] *= 2 * ransac_options.squared_inlier_thresholds_[0] / ransac_options.squared_inlier_thresholds_[1];
     double sampson_squared_weight = ransac_options.data_type_weights_[1];
-
-    // ransac_options.data_type_weights_[1] *= 0.5;
-    // HybridTwoFocalPoseEstimator solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
-    //    norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_);
-    
     ransac_options.data_type_weights_.push_back(ransac_options.data_type_weights_[1]);
-    // ransac_options.data_type_weights_.push_back(ransac_options.squared_inlier_thresholds_[0] / 1e-2);
     ransac_options.squared_inlier_thresholds_.push_back(ransac_options.squared_inlier_thresholds_[1]);
-    // ransac_options.squared_inlier_thresholds_.push_back(1e-2);
     ransac_options.data_type_weights_[1] = ransac_options.data_type_weights_[0];
     ransac_options.squared_inlier_thresholds_[1] = ransac_options.squared_inlier_thresholds_[0];
+
     HybridTwoFocalPoseEstimator solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
         norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_, est_config);
 
     PoseScaleOffsetTwoFocal best_solution;
     ransac_lib::HybridRansacStatistics ransac_stats;
 
-    // HybridUncertaintyLOMSAC<PoseScaleOffsetTwoFocal, std::vector<PoseScaleOffsetTwoFocal>, HybridTwoFocalPoseEstimator> lomsac;
     HybridUncertaintyLOMSAC<PoseScaleOffsetTwoFocal, std::vector<PoseScaleOffsetTwoFocal>, HybridTwoFocalPoseEstimator> lomsac;
     lomsac.EstimateModel(ransac_options, solver, &best_solution, &ransac_stats);
-
-    // std::cout << solver.GetTimingInfo() << std::endl;
 
     best_solution.focal0 *= norm_scale;
     best_solution.focal1 *= norm_scale;
@@ -190,9 +181,6 @@ int HybridTwoFocalPoseEstimator::MinimalSolver(
             sol.offset1 = offset1;
             models->push_back(sol);
         }
-
-        // auto t2 = std::chrono::high_resolution_clock::now();
-        // solver_time[1].push_back(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
     }
     return models->size();
 }
@@ -293,4 +281,4 @@ void HybridTwoFocalPoseEstimator::LeastSquares(const std::vector<std::vector<int
     *model = optim.GetSolution();
 }
 
-} // namespace acmpose
+} // namespace madpose

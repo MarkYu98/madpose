@@ -3,7 +3,7 @@
 
 #include "utils.h"
 
-namespace acmpose {
+namespace madpose {
 
 class OptimizerConfig {
 public:
@@ -58,6 +58,6 @@ public:
 
 typedef SharedFocalOptimizerConfig TwoFocalOptimizerConfig;
 
-} // namespace acmpose
+} // namespace madpose
 
 #endif // OPTIMIZER_CONFIG_H

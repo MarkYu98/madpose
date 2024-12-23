@@ -13,7 +13,7 @@ if (dict.contains(#key)) key = dict[#key].cast<type>();
   if (dict.contains(#key)) obj.key = dict[#key].cast<type>();
 
 namespace py = pybind11;
-namespace acmpose {
+namespace madpose {
 
 inline Eigen::Matrix3d to_essential_matrix(Eigen::Matrix3d R, Eigen::Vector3d t) {
     Eigen::Matrix3d E;
@@ -88,6 +88,6 @@ inline void AssignSolverOptionsFromDict(ceres::Solver::Options& solver_options, 
     ASSIGN_PYDICT_ITEM_TO_MEMBER(solver_options,dict,inner_iteration_tolerance,double)
 }
 
-} // namespace acmpose
+} // namespace madpose
 
 #endif // UTILS_H

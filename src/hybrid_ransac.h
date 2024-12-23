@@ -14,7 +14,7 @@
 #include <RansacLib/utils.h>
 
 using namespace ransac_lib;
-namespace acmpose {
+namespace madpose {
 
 class ExtendedHybridLORansacOptions : public ransac_lib::HybridLORansacOptions {
  public:
@@ -677,6 +677,6 @@ class HybridUncertaintyLOMSAC : public HybridRansacBase {
   }
 };
 
-}  // namespace acmpose
+}  // namespace madpose
 
 #endif  // HYBRID_RANSAC_H

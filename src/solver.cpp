@@ -1,6 +1,6 @@
 #include "solver.h"
 
-namespace acmpose {
+namespace madpose {
 
 PoseAndScale estimate_scale_and_pose(const Eigen::MatrixXd &X, const Eigen::MatrixXd &Y, const Eigen::VectorXd &W) {
     // X: 3 x N
@@ -530,4 +530,4 @@ std::vector<PoseScaleOffsetTwoFocal> estimate_scale_shift_pose_two_focal_wrapper
     return output;
 }
 
-}; // namespace acmpose
+}; // namespace madpose

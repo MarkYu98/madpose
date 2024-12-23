@@ -4,7 +4,7 @@
 #include "utils.h"
 #include "pose.h"
 
-namespace acmpose {
+namespace madpose {
 
 // *******************************************************************
 //
@@ -343,6 +343,6 @@ private:
     const double weight_;
 };
 
-} // namespace acmpose
+} // namespace madpose
 
 #endif // COST_FUNCTIONS_H

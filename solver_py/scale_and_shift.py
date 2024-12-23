@@ -1,5 +1,5 @@
 import numpy as np
-import acmpose
+import madpose
 
 def solve_shift_and_scale(x1, x2, d1, d2):
     # Estimates scale and shift
@@ -102,8 +102,8 @@ def test_solver():
     d2 = (d2_gt - b2_gt) / a2_gt
 
     sols = solve_shift_and_scale(x1, x2, d1, d2)
-    sols_mono = acmpose.solve_scale_and_shift(x1.T, x2.T, d1, d2)
-    posescaleoffsets = acmpose.estimate_scale_shift_pose(x1.T, x2.T, d1, d2)
+    sols_mono = madpose.solve_scale_and_shift(x1.T, x2.T, d1, d2)
+    posescaleoffsets = madpose.estimate_scale_shift_pose(x1.T, x2.T, d1, d2)
     for p in posescaleoffsets:
         R_est, t_est = p.R(), p.t()
         a, b1, b2 = p.scale, p.offset0, p.offset1

@@ -7,7 +7,7 @@
 #include "optimizer.h"
 #include "estimator_config.h"
 
-namespace acmpose {
+namespace madpose {
 
 class HybridPoseEstimator {
 public:
@@ -192,6 +192,6 @@ HybridEstimatePoseAndScale(const std::vector<Eigen::Vector2d> &x0, const std::ve
                            const ExtendedHybridLORansacOptions& options, 
                            const EstimatorConfig &est_config = EstimatorConfig());
 
-} // namespace acmpose
+} // namespace madpose
 
 #endif // HYBRID_POSE_ESTIMATION_H

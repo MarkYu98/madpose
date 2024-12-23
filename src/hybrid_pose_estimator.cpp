@@ -4,7 +4,7 @@
 #include "solver.h"
 #include "hybrid_pose_estimator.h"
 
-namespace acmpose {
+namespace madpose {
 
 std::pair<PoseScaleOffset, ransac_lib::HybridRansacStatistics> 
 HybridEstimatePoseScaleOffset(const std::vector<Eigen::Vector2d> &x0, const std::vector<Eigen::Vector2d> &x1,
@@ -52,7 +52,6 @@ HybridEstimatePoseAndScale(const std::vector<Eigen::Vector2d> &x0, const std::ve
     // Change to "three data types"
     ransac_options.data_type_weights_[1] *= 2 * ransac_options.squared_inlier_thresholds_[0] / ransac_options.squared_inlier_thresholds_[1];
     double sampson_squared_weight = ransac_options.data_type_weights_[1];
-    
     ransac_options.data_type_weights_.push_back(ransac_options.data_type_weights_[1]);
     ransac_options.squared_inlier_thresholds_.push_back(ransac_options.squared_inlier_thresholds_[1]);
     ransac_options.data_type_weights_[1] = ransac_options.data_type_weights_[0];
@@ -444,4 +443,4 @@ void HybridPoseEstimatorScaleOnly::LeastSquares(const std::vector<std::vector<in
         return;
     *model = optim.GetSolution();
 }
-} // namespace acmpose
+} // namespace madpose

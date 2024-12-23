@@ -13,13 +13,13 @@
 namespace py = pybind11;
 using namespace py::literals;
 
-namespace acmpose {
+namespace madpose {
 
 void bind_estimator(py::module &);
 void bind_ba(py::module &);
 void bind_ransaclib(py::module& m);
 
-PYBIND11_MODULE(acmpose, m) {
+PYBIND11_MODULE(madpose, m) {
     m.doc() = "Solvers and estimators for relative pose estimation through affine correction of monocular depth priors.";
 
     py::add_ostream_redirect(m, "ostream_redirect");
@@ -172,5 +172,5 @@ void bind_estimator(py::module& m) {
         "pp0"_a, "pp1"_a, "options"_a, "est_config"_a = EstimatorConfig());
 }
 
-} // namespace acmpose
+} // namespace madpose
 

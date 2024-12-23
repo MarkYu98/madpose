@@ -5,7 +5,7 @@
 #include "optimizer_config.h"
 #include "cost_functions.h"
 
-namespace acmpose {
+namespace madpose {
 
 class HybridPoseOptimizer {
 protected:
@@ -513,7 +513,7 @@ public:
     }
 };
 
-} // namespace acmpose
+} // namespace madpose
 
 #endif // OPTIMIZER_H
 

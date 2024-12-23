@@ -3,7 +3,7 @@
 
 #include <Eigen/Core>
 
-namespace acmpose {
+namespace madpose {
 
 struct PoseAndScale {
     Eigen::Matrix<double, 3, 4> pose;
@@ -53,6 +53,6 @@ struct PoseScaleOffsetTwoFocal : public PoseScaleOffset {
         PoseScaleOffset(R, t, scale, b0, b1), focal0(f0), focal1(f1) {}
 };
 
-} // namespace acmpose
+} // namespace madpose
 
 #endif // POSE_H

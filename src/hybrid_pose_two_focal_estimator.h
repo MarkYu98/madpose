@@ -7,7 +7,7 @@
 #include "solver.h"
 #include "estimator_config.h"
 
-namespace acmpose {
+namespace madpose {
 
 class HybridTwoFocalPoseEstimator {
 public:
@@ -137,6 +137,6 @@ HybridEstimatePoseScaleOffsetTwoFocal(const std::vector<Eigen::Vector2d> &x0_nor
                               const ExtendedHybridLORansacOptions& options, 
                               const EstimatorConfig &estimator_config = EstimatorConfig());
 
-} // namespace acmpose
+} // namespace madpose
 
 #endif // HYBRID_POSE_TWO_FOCAL_ESTIMATION_H

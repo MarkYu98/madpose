@@ -1,5 +1,5 @@
 import numpy as np
-import acmpose
+import madpose
 
 def solve_shift_and_scale_shared_focal(x1_, x2_, d1, d2):
     # Estimates scale, shift and a shared focal length
@@ -138,8 +138,8 @@ def test_solver():
     d2 = (d2_gt - b2_gt) / a2_gt
 
     sols = solve_shift_and_scale_shared_focal(x1, x2, d1, d2)
-    sols_mono = acmpose.solve_scale_and_shift_shared_focal(x1.T, x2.T, d1, d2)
-    posescaleoffsetsfs = acmpose.estimate_scale_shift_pose_shared_focal(x1.T, x2.T, d1, d2)
+    sols_mono = madpose.solve_scale_and_shift_shared_focal(x1.T, x2.T, d1, d2)
+    posescaleoffsetsfs = madpose.estimate_scale_shift_pose_shared_focal(x1.T, x2.T, d1, d2)
 
     for p in posescaleoffsetsfs:
         R_est, t_est = p.R(), p.t()

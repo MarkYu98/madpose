@@ -1,7 +1,7 @@
 #ifndef ESTIMATOR_CONFIG_H
 #define ESTIMATOR_CONFIG_H
 
-namespace acmpose {
+namespace madpose {
 
 enum class EstimatorOption {
     HYBRID = 0,
@@ -30,6 +30,6 @@ public:
     bool use_shift = true;
 };
 
-} // namespace acmpose
+} // namespace madpose
 
 #endif // ESTIMATOR_CONFIG_H

@@ -117,13 +117,13 @@ class CMakeBuild(build_ext):
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
-    name="acmpose",
+    name="madpose",
     version="0.0.1",
     author="Yifan Yu",
     author_email="markyu98@outlook.com",
     description='''Solvers and estimators described in the paper "Relative pose estimation through affine correction of monocular depth priors".''',
     long_description="",
-    ext_modules=[CMakeExtension("acmpose")],
+    ext_modules=[CMakeExtension("madpose")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     python_requires=">=3.7",

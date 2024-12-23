@@ -1,5 +1,5 @@
 import numpy as np
-import acmpose
+import madpose
 
 def solve_shift_and_scale_two_focal(x1_, x2_, d1, d2):
     # Estimates scale, shift, and two focal lengths
@@ -145,8 +145,8 @@ def test_solver():
     d2 = (d2_gt - b2_gt) / a2_gt
 
     sols = solve_shift_and_scale_two_focal(x1, x2, d1, d2)
-    sols_mono = acmpose.solve_scale_and_shift_two_focal(x1.T, x2.T, d1, d2)
-    posescaleoffsettfs = acmpose.estimate_scale_shift_pose_two_focal(x1.T, x2.T, d1, d2)
+    sols_mono = madpose.solve_scale_and_shift_two_focal(x1.T, x2.T, d1, d2)
+    posescaleoffsettfs = madpose.estimate_scale_shift_pose_two_focal(x1.T, x2.T, d1, d2)
 
     # for p in posescaleoffsettfs:
     #     R_est, t_est = p.R(), p.t()

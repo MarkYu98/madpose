@@ -7,7 +7,7 @@
 #include "solver.h"
 #include "estimator_config.h"
 
-namespace acmpose {
+namespace madpose {
 
 class HybridSharedFocalPoseEstimator {
 public:
@@ -101,6 +101,6 @@ HybridEstimatePoseScaleOffsetSharedFocal(const std::vector<Eigen::Vector2d> &x0_
                               const ExtendedHybridLORansacOptions& options, 
                               const EstimatorConfig &est_config = EstimatorConfig());
 
-} // namespace acmpose
+} // namespace madpose
 
 #endif // HYBRID_POSE_SHARED_FOCAL_ESTIMATION_H

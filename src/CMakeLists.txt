@@ -8,13 +8,13 @@ set(SOURCES
 )
 
 # Create the pybind11 module
-pybind11_add_module(acmpose ${SOURCES})
+pybind11_add_module(madpose ${SOURCES})
 
 # Add include directory for header files
-target_include_directories(acmpose PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(madpose PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link libraries
-target_link_libraries(acmpose PRIVATE 
+target_link_libraries(madpose PRIVATE 
     Eigen3::Eigen 
     PoseLib::PoseLib 
     Ceres::ceres 
