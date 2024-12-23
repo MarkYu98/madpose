@@ -186,27 +186,21 @@ public:
         ceres::LossFunction* proj_loss_func = config_.reproj_loss_function.get();
         ceres::LossFunction* sampson_loss_func = config_.sampson_loss_function.get();
 
-        // geo_loss_func = new ceres::ScaledLoss(geo_loss_func, config_.weight_geometric, ceres::DO_NOT_TAKE_OWNERSHIP);
-        // sampson_loss_func = new ceres::ScaledLoss(sampson_loss_func, config_.weight_sampson, ceres::DO_NOT_TAKE_OWNERSHIP);
-
         if (config_.use_reprojection) {
             for (auto &i : indices_reproj_0_) {
-                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(proj_loss_func, 1.0, ceres::DO_NOT_TAKE_OWNERSHIP);
                 ceres::CostFunction* reproj_cost_0 = LiftProjectionSharedFocalFunctor0::Create(x0_.col(i), x1_.col(i), d0_(i));
-                problem_->AddResidualBlock(reproj_cost_0, weighted_loss, &offset0_, qvec_.data(), tvec_.data(), &focal_);
+                problem_->AddResidualBlock(reproj_cost_0, proj_loss_func, &offset0_, qvec_.data(), tvec_.data(), &focal_);
             }
             for (auto &i : indices_reproj_1_) {
-                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(proj_loss_func, 1.0, ceres::DO_NOT_TAKE_OWNERSHIP);
                 ceres::CostFunction* reproj_cost_1 = LiftProjectionSharedFocalFunctor1::Create(x1_.col(i), x0_.col(i), d1_(i));
-                problem_->AddResidualBlock(reproj_cost_1, weighted_loss, &scale_, &offset1_, qvec_.data(), tvec_.data(), &focal_);
+                problem_->AddResidualBlock(reproj_cost_1, proj_loss_func, &scale_, &offset1_, qvec_.data(), tvec_.data(), &focal_);
             }
         }
 
         for (auto &i : indices_sampson_) {
             if (config_.use_sampson) {
-                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(sampson_loss_func, 1.0, ceres::DO_NOT_TAKE_OWNERSHIP);
                 ceres::CostFunction* sampson_cost = SampsonErrorSharedFocalFunctor::Create(x0_.col(i), x1_.col(i), config_.weight_sampson);
-                problem_->AddResidualBlock(sampson_cost, weighted_loss, qvec_.data(), tvec_.data(), &focal_);
+                problem_->AddResidualBlock(sampson_cost, sampson_loss_func, qvec_.data(), tvec_.data(), &focal_);
             }
         }
 
