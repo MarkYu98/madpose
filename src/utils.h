@@ -2,18 +2,9 @@
 #define UTILS_H
 
 #include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-
-#include <colmap/util/logging.h>
 #include <colmap/util/threading.h>
-#include <colmap/util/misc.h>
-#include <colmap/estimators/bundle_adjustment.h>
-
 #include <ceres/ceres.h>
-#include <ceres/cubic_interpolation.h>
-
 #include <Eigen/Core>
-#include <Eigen/Dense>
 
 #define ASSIGN_PYDICT_ITEM(dict,key,type) \
 if (dict.contains(#key)) key = dict[#key].cast<type>();

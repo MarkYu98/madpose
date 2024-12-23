@@ -202,7 +202,7 @@ class HybridUncertaintyLOMSAC : public HybridRansacBase {
 
     if (options.final_least_squares_) {
       Model refined_model = *best_model;
-      solver.LeastSquares(stats.inlier_indices, stats.best_solver_type, &refined_model, true);
+      solver.LeastSquares(stats.inlier_indices, stats.best_solver_type, &refined_model);
 
       double score = std::numeric_limits<double>::max();
       ScoreModel(options, solver, refined_model, kSqrInlierThresh,
@@ -243,36 +243,9 @@ class HybridUncertaintyLOMSAC : public HybridRansacBase {
     const double kSumInlierRatios = std::accumulate(
         stats.inlier_ratios.begin(), stats.inlier_ratios.end(), 0.0);
 
-    // if (kSumInlierRatios == 0.0) {
-    if (true) {
-      for (int i = 0; i < kNumSolvers; ++i) {
-        probabilities[i] = prior_probabilities[i];
-        sum_probabilities += probabilities[i];
-      }
-    } else {
-      for (int i = 0; i < kNumSolvers; ++i) {
-        double num_iters =
-            static_cast<double>(stats.num_iterations_per_solver[i]);
-        if (num_iters > 0.0) {
-          num_iters -= 1.0;
-        }
-
-        double all_inlier_prob = 1.0;
-        for (int j = 0; j < kNumDataTypes; ++j) {
-          all_inlier_prob *=
-              std::pow(stats.inlier_ratios[j],
-                       static_cast<double>(min_sample_sizes[i][j]));
-        }
-
-        if (num_iters < static_cast<double>(min_num_iterations)) {
-          probabilities[i] = all_inlier_prob * prior_probabilities[i];
-        } else {
-          probabilities[i] = all_inlier_prob *
-                             std::pow(1.0 - all_inlier_prob, num_iters) *
-                             prior_probabilities[i];
-        }
-        sum_probabilities += probabilities[i];
-      }
+    for (int i = 0; i < kNumSolvers; ++i) {
+      probabilities[i] = prior_probabilities[i];
+      sum_probabilities += probabilities[i];
     }
 
     std::uniform_real_distribution<double> dist(0.0, sum_probabilities);
@@ -323,9 +296,9 @@ class HybridUncertaintyLOMSAC : public HybridRansacBase {
     for (int t = 0; t < num_data_types; ++t) {
       if (kSolverType >= 0 && min_sample_sizes[kSolverType][t] == 0) continue;
       for (int i = 0; i < num_data[t]; ++i) {
-        double squared_error = solver.EvaluateModelOnPoint(model, t, i, squared_inlier_thresholds[t]);
+        double squared_error = solver.EvaluateModelOnPoint(model, t, i);
         *score += ComputeScore(squared_error, squared_inlier_thresholds[t]) *
-                  options.data_type_weights_[t] * solver.GetWeight(i);
+                  options.data_type_weights_[t];
       }
     }
   }
@@ -356,7 +329,7 @@ class HybridUncertaintyLOMSAC : public HybridRansacBase {
           (*inliers)[t].clear();
         }
         for (int i = 0; i < num_data[t]; ++i) {
-          double squared_error = solver.EvaluateModelOnPoint(model, t, i, squared_inlier_thresholds[t]);
+          double squared_error = solver.EvaluateModelOnPoint(model, t, i, true);
           if (squared_error < squared_inlier_thresholds[t]) {
             ++num_inliers;
             if (inliers != nullptr) (*inliers)[t].push_back(i);
@@ -376,7 +349,7 @@ class HybridUncertaintyLOMSAC : public HybridRansacBase {
       for (int i = 0; i < num_data[0]; ++i) {
         bool is_common_inlier = true;
         for (int t = 0; t < kNumDataTypes; ++t) {
-          double squared_error = solver.EvaluateModelOnPoint(model, t, i, squared_inlier_thresholds[t]);
+          double squared_error = solver.EvaluateModelOnPoint(model, t, i);
           if (squared_error >= squared_inlier_thresholds[t]) {
             is_common_inlier = false;
             break;
@@ -586,11 +559,12 @@ class HybridUncertaintyLOMSAC : public HybridRansacBase {
     }
 
     if (use_all_solver_inliers) {
+      // int sample_size = 0;
       // for (int i = 0; i < kNumDataTypes; ++i) {
       //   if (sample_sizes[solver_type][i] > 0)
-      //     sample_sizes[solver_type][i] = inliers[i].size();
+      //     sample_size += inliers[i].size() / 3;
       // }
-      // utils::RandomShuffleAndResize(sample_sizes[solver_type], rng, &inliers);
+      // utils::RandomShuffleAndResize(sample_size, rng, &inliers);
       solver.LeastSquares(inliers, solver_type, model);
     } 
     else {

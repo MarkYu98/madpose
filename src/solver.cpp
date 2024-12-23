@@ -2,6 +2,36 @@
 
 namespace acmpose {
 
+PoseAndScale estimate_scale_and_pose(const Eigen::MatrixXd &X, const Eigen::MatrixXd &Y, const Eigen::VectorXd &W) {
+    // X: 3 x N
+    // Y: 3 x N
+    // W: N x 1
+
+    // 1. Compute the weighted centroid of X and Y
+    Eigen::Vector3d centroid_X = X * W / W.sum();
+    Eigen::Vector3d centroid_Y = Y * W / W.sum();
+
+    Eigen::MatrixXd X_centered = X.colwise() - centroid_X;
+    Eigen::MatrixXd Y_centered = Y.colwise() - centroid_Y;
+
+    Eigen::Matrix3d S = Y_centered * W.asDiagonal() * X_centered.transpose();
+
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(S, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::Matrix3d U = svd.matrixU();
+    Eigen::Matrix3d V = svd.matrixV();
+
+    if (U.determinant() * V.determinant() < 0) {
+        U.col(2) *= -1;
+    }
+    Eigen::Matrix3d R = U * V.transpose();
+
+    Eigen::MatrixXd X_rotated = R * X_centered;
+    double scale = Y_centered.cwiseProduct(X_rotated).sum() / X_rotated.cwiseProduct(X_rotated).sum();
+
+    Eigen::Vector3d t = centroid_Y - scale * R * centroid_X;
+    return PoseAndScale(R, t, scale);
+}
+
 std::vector<Eigen::Vector4d> solve_scale_and_shift(
     const Eigen::Matrix3d &x_homo, const Eigen::Matrix3d &y_homo, 
     const Eigen::Vector3d &depth_x, const Eigen::Vector3d &depth_y) {
@@ -497,154 +527,6 @@ std::vector<PoseScaleOffsetTwoFocal> estimate_scale_shift_pose_two_focal_wrapper
     const Eigen::Vector4d &depth_x, const Eigen::Vector4d &depth_y) {
     std::vector<PoseScaleOffsetTwoFocal> output;
     int sol_num = estimate_scale_shift_pose_two_focal(x_homo, y_homo, depth_x, depth_y, &output);
-    return output;
-}
-
-int estimate_scale_and_pose_with_offset_3pts(
-    const Eigen::Matrix3d &x_homo, const Eigen::Matrix3d &y_homo,
-    const Eigen::Vector3d &depth_x, const Eigen::Vector3d &depth_y,
-    std::vector<PoseScaleOffset> *output) {
-    // X: 3 x 3, column vectors are normalized 2D points
-    // Y: 3 x 3, column vectors are normalized 2D points
-    Eigen::Matrix<double, 3, 10> coeffs;
-
-    Eigen::Matrix3d X = x_homo.array().rowwise() * depth_x.transpose().array();
-    Eigen::Matrix3d Y = y_homo.array().rowwise() * depth_y.transpose().array();
-
-    for (int i = 0; i < 3; i++) {
-        int j = (i + 1) % 3;
-        const Eigen::Vector3d &x1 = x_homo.col(i);
-        const Eigen::Vector3d &y1 = y_homo.col(i);
-        const Eigen::Vector3d &x2 = x_homo.col(j);
-        const Eigen::Vector3d &y2 = y_homo.col(j);
-        const double &x1d = depth_x(i), &x2d = depth_x(j);
-        const double &y1d = depth_y(i), &y2d = depth_y(j);
-
-        const double &x1u = x1(0), &x1v = x1(1), &x1w = x1(2);
-        const double &x2u = x2(0), &x2v = x2(1), &x2w = x2(2);
-        const double &y1u = y1(0), &y1v = y1(1), &y1w = y1(2);
-        const double &y2u = y2(0), &y2v = y2(1), &y2w = y2(2);
-
-        Eigen::RowVector<double, 10> coeff;
-        // double coeff_a_2 =  x1u * x1u * x1d * x1d + x2u * x2u * x2d * x2d - 2 * x1u * x2u * x1d * x2d +
-        //                     x1v * x1v * x1d * x1d + x2v * x2v * x2d * x2d - 2 * x1v * x2v * x1d * x2d +
-        //                     x1w * x1w * x1d * x1d + x2w * x2w * x2d * x2d - 2 * x1w * x2w * x1d * x2d;
-        // double coeff_ab  = (x1u * x1u * x1d + x2u * x2u * x2d - x1u * x2u * (x1d + x2d) + 
-        //                     x1v * x1v * x1d + x2v * x2v * x2d - x1v * x2v * (x1d + x2d) +
-        //                     x1w * x1w * x1d + x2w * x2w * x2d - x1w * x2w * (x1d + x2d)) * 2;
-        // double coeff_b_2 =  x1u * x1u + x2u * x2u - 2 * x1u * x2u +
-        //                     x1v * x1v + x2v * x2v - 2 * x1v * x2v +
-        //                     x1w * x1w + x2w * x2w - 2 * x1w * x2w;
-        // double coeff_c_2 = (y1u * y1u + y2u * y2u - 2 * y1u * y2u +
-        //                     y1v * y1v + y2v * y2v - 2 * y1v * y2v +
-        //                     y1w * y1w + y2w * y2w - 2 * y1w * y2w) * -1; 
-        // double coeff_c   = (y1u * y1u * y1d + y2u * y2u * y2d - y1u * y2u * (y1d + y2d) +
-        //                     y1v * y1v * y1d + y2v * y2v * y2d - y1v * y2v * (y1d + y2d) +
-        //                     y1w * y1w * y1d + y2w * y2w * y2d - y1w * y2w * (y1d + y2d)) * -2;
-        // double coeff_1   = (y1u * y1u * y1d * y1d + y2u * y2u * y2d * y2d - 2 * y1u * y2u * y1d * y2d +
-        //                     y1v * y1v * y1d * y1d + y2v * y2v * y2d * y2d - 2 * y1v * y2v * y1d * y2d +
-        //                     y1w * y1w * y1d * y1d + y2w * y2w * y2d * y2d - 2 * y1w * y2w * y1d * y2d) * -1;
-
-        double coeff_a_2 =  (x1u * x1d - x2u * x2d) * (x1u * x1d - x2u * x2d) +
-                            (x1v * x1d - x2v * x2d) * (x1v * x1d - x2v * x2d) +
-                            (x1w * x1d - x2w * x2d) * (x1w * x1d - x2w * x2d);
-        double coeff_ab  = ((x1u * x1d - x2u * x2d) * (x1u - x2u) +
-                            (x1v * x1d - x2v * x2d) * (x1v - x2v) +
-                            (x1w * x1d - x2w * x2d) * (x1w - x2w)) * 2;
-        double coeff_b_2 =  (x1u - x2u) * (x1u - x2u) +
-                            (x1v - x2v) * (x1v - x2v) +
-                            (x1w - x2w) * (x1w - x2w);
-        double coeff_c_2 = ((y1u - y2u) * (y1u - y2u) +
-                            (y1v - y2v) * (y1v - y2v) +
-                            (y1w - y2w) * (y1w - y2w)) * -1;
-        double coeff_c   = ((y1u * y1d - y2u * y2d) * (y1u - y2u) +
-                            (y1v * y1d - y2v * y2d) * (y1v - y2v) +
-                            (y1w * y1d - y2w * y2d) * (y1w - y2w)) * -2;
-        double coeff_1   = ((y1u * y1d - y2u * y2d) * (y1u * y1d - y2u * y2d) +
-                            (y1v * y1d - y2v * y2d) * (y1v * y1d - y2v * y2d) +
-                            (y1w * y1d - y2w * y2d) * (y1w * y1d - y2w * y2d)) * -1;
-        coeff << coeff_a_2, coeff_ab, 0, coeff_b_2, 0, coeff_c_2, 0, 0, coeff_c, coeff_1;
-        coeffs.row(i) = coeff;
-    }
-
-    Eigen::Matrix<double, 3, 8> solutions;
-    int num_sols = poselib::re3q3::re3q3(coeffs, &solutions);
-
-    Eigen::Matrix<double, 3, 3> Ax, Ay, Az;
-    Ax << coeffs.col(3), coeffs.col(5), coeffs.col(4); // y^2, z^2, yz
-    Ay << coeffs.col(0), coeffs.col(5), coeffs.col(2); // x^2, z^2, xz
-    Az << coeffs.col(3), coeffs.col(0), coeffs.col(1); // y^2, x^2, yx
-
-    // We check det(A) as a cheaper proxy for condition number
-    int elim_var = 0;
-    double detx = std::abs(Ax.determinant());
-    double dety = std::abs(Ay.determinant());
-    double detz = std::abs(Az.determinant());
-
-    // std::cout << "detx: " << detx << std::endl;
-    // std::cout << "dety: " << dety << std::endl;
-    // std::cout << "detz: " << detz << std::endl;
-
-    // std::cout << Az.inverse() << std::endl;
-
-    // double a = 1.8526, b = 4.7592, c = 2.0301;
-    // Eigen::Vector<double, 10> mon;
-    // mon << a*a, a*b, a*c, b*b, b*c, c*c, a, b, c, 1.0;
-    // std::cout << coeffs * mon << std::endl;
-
-    // std::cout << solutions << std::endl;
-
-    // std::cout << "num_sols: " << num_sols << std::endl; 
-    // for (int i = 0; i < num_sols; i++) {
-    //     double a = solutions(0, i), b = solutions(1, i), c = solutions(2, i);
-    //     Eigen::Vector<double, 10> mons;
-    //     mons << a * a, a * b, a * c, b * b, b * c, c * c, a, b, c, 1;
-    //     Eigen::Vector<double, 3> res = coeffs * mons;
-    //     std::cout << a << " " << b << " " << c << std::endl; 
-    // }
-
-    output->clear();
-    const double &x0d = depth_x(0), &x1d = depth_x(1), &x2d = depth_x(2);
-    const double &y0d = depth_y(0), &y1d = depth_y(1), &y2d = depth_y(2);
-    for (int i = 0; i < num_sols; i++) {
-        double a = solutions(0, i), b = solutions(1, i), c = solutions(2, i);
-        if (a <= 0) continue;
-        if (x0d * a + b <= 0 || x1d * a + b <= 0 || x2d * a + b <= 0) continue;
-        if (y0d + c <= 0 || y1d + c <= 0 || y2d + c <= 0) continue;
-
-        Eigen::Vector3d X = X.array().colwise() * (depth_x.array() * a + b);
-        Eigen::Vector3d Y = Y.array().colwise() * (depth_y.array() + c);
-
-        Eigen::Vector3d centroid_X = X.rowwise().mean();
-        Eigen::Vector3d centroid_Y = Y.rowwise().mean();
-
-        Eigen::MatrixXd X_centered = X.colwise() - centroid_X;
-        Eigen::MatrixXd Y_centered = Y.colwise() - centroid_Y;
-
-        Eigen::Matrix3d W = Y_centered * X_centered.transpose();
-        Eigen::JacobiSVD<Eigen::MatrixXd> svd(W, Eigen::ComputeFullU | Eigen::ComputeFullV);
-        Eigen::Matrix3d U = svd.matrixU();
-        Eigen::Matrix3d V = svd.matrixV();
-
-        if (U.determinant() * V.determinant() < 0) {
-            U.col(2) *= -1;
-        }
-        Eigen::Matrix3d R = U * V.transpose();
-        Eigen::MatrixXd X_rotated = R * X_centered;
-        Eigen::Vector3d t = centroid_Y - R * centroid_X;
-
-        output->push_back(PoseScaleOffset(R, t, a, b, c));
-    }
-    return output->size();
-}
-
-std::vector<PoseScaleOffset> estimate_scale_and_pose_with_offset_3pts_wrap(
-    const Eigen::Matrix3d &x_homo, const Eigen::Matrix3d &y_homo,
-    const Eigen::Vector3d &depth_x, const Eigen::Vector3d &depth_y) {
-    // X: 3 x 3, column vectors are homogeneous 2D points
-    // Y: 3 x 3, column vectors are homogeneous 2D points
-    std::vector<PoseScaleOffset> output;
-    estimate_scale_and_pose_with_offset_3pts(x_homo, y_homo, depth_x, depth_y, &output);
     return output;
 }
 

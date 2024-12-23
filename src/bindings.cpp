@@ -6,8 +6,6 @@
 
 #include <RansacLib/ransac.h>
 #include "solver.h"
-#include "scale_offset_estimator.h"
-#include "point_cloud_pose_estimator.h"
 #include "pose_scale_shift_estimator.h"
 #include "hybrid_pose_estimator.h"
 #include "hybrid_pose_shared_focal_estimator.h"
@@ -23,7 +21,7 @@ void bind_ba(py::module &);
 void bind_ransaclib(py::module& m);
 
 PYBIND11_MODULE(acmpose, m) {
-    m.doc() = "Affine corrected monodepth relative pose estimators";
+    m.doc() = "Solvers and estimators for relative pose estimation through affine correction of monocular depth priors.";
 
     py::add_ostream_redirect(m, "ostream_redirect");
 
@@ -101,7 +99,15 @@ void bind_estimator(py::module& m) {
     .def_readwrite("constant_pose", &OptimizerConfig::constant_pose)
     .def_readwrite("constant_scale", &OptimizerConfig::constant_scale)
     .def_readwrite("constant_offset", &OptimizerConfig::constant_offset)
-    .def_readwrite("solver_options", &OptimizerConfig::solver_options);
+    .def_readwrite("solver_options", &OptimizerConfig::solver_options)
+    .def_readwrite("min_depth_constraint", &OptimizerConfig::min_depth_constraint)
+    .def_readwrite("use_shift", &OptimizerConfig::use_shift);
+
+    py::class_<EstimatorConfig>(m, "EstimatorConfig")
+    .def(py::init<>())
+    .def(py::init<int, int, int>(), "solver"_a = 0, "score"_a = 0, "LO"_a = 0)
+    .def_readwrite("min_depth_constraint", &EstimatorConfig::min_depth_constraint)
+    .def_readwrite("use_shift", &EstimatorConfig::use_shift);
 
     py::class_<PoseAndScale>(m, "PoseAndScale")
     .def(py::init<>())
@@ -171,23 +177,16 @@ void bind_estimator(py::module& m) {
         "x_homo"_a, "y_homo"_a, "depth_x"_a, "depth_y"_a);
     m.def("estimate_scale_shift_pose_two_focal", &estimate_scale_shift_pose_two_focal_wrapper,
         "x_homo"_a, "y_homo"_a, "depth_x"_a, "depth_y"_a);
-    m.def("estimate_scale_and_pose_with_offset_3pts", &estimate_scale_and_pose_with_offset_3pts_wrap, 
-        "x_homo"_a, "y_homo"_a, "depth_x"_a, "depth_y"_a);
-    m.def("EstimatePointCloudPose", &EstimatePointCloudPose, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "K0"_a, "K1"_a, "options"_a, 
-        "uncert_weight"_a = std::vector<double>());
-    m.def("EstimatePointCloudPoseWithOffset", &EstimatePointCloudPoseWithOffset, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a,
-        "K0"_a, "K1"_a, "options"_a, "uncert_weight"_a = std::vector<double>());
     m.def("EstimatePoseScaleOffset", &EstimatePoseScaleOffset, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a,
-        "K0"_a, "K1"_a, "options"_a, "uncert_weight"_a = std::vector<double>());
-    m.def("HybridEstimatePoseScaleOffset", &HybridEstimatePoseScaleOffset, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a, // "max_depth"_a,
-        "K0"_a, "K1"_a, "options"_a, "uncert_weight"_a = std::vector<double>());
-    m.def("HybridEstimatePoseScaleOffsetSharedFocal", &HybridEstimatePoseScaleOffsetSharedFocal, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a, // "max_depth"_a,
-        "pp0"_a, "pp1"_a, "options"_a, "uncert_weight"_a = std::vector<double>());
-    m.def("HybridEstimatePoseScaleOffsetTwoFocal", &HybridEstimatePoseScaleOffsetTwoFocal, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a, // "max_depth"_a,
-        "pp0"_a, "pp1"_a, "options"_a, "uncert_weight"_a = std::vector<double>());
-    m.def("EstimateScaleOffset", &EstimateScaleOffset, "x"_a, "y"_a, "options"_a, "use_log_score"_a = false);
-    m.def("EstimateTwoViewScaleOffset", &EstimateTwoViewScaleOffset, "mkpts0"_a, "mkpts1"_a, "depth0"_a, "depth1"_a, "triangulated_p3ds"_a, "T_0to1"_a, "options"_a);
-    m.def("TwoViewScaleOffsetLSQ", &TwoViewScaleOffsetLSQ, "mkpts0"_a, "mkpts1"_a, "depth0"_a, "depth1"_a, "T_0to1"_a);
+        "K0"_a, "K1"_a, "options"_a);
+    m.def("HybridEstimatePoseAndScale", &HybridEstimatePoseAndScale, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a,  
+        "K0"_a, "K1"_a, "options"_a, "est_config"_a = EstimatorConfig());
+    m.def("HybridEstimatePoseScaleOffset", &HybridEstimatePoseScaleOffset, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a, 
+        "K0"_a, "K1"_a, "options"_a, "est_config"_a = EstimatorConfig());
+    m.def("HybridEstimatePoseScaleOffsetSharedFocal", &HybridEstimatePoseScaleOffsetSharedFocal, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a, 
+        "pp0"_a, "pp1"_a, "options"_a, "est_config"_a = EstimatorConfig());
+    m.def("HybridEstimatePoseScaleOffsetTwoFocal", &HybridEstimatePoseScaleOffsetTwoFocal, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "min_depth"_a, 
+        "pp0"_a, "pp1"_a, "options"_a, "est_config"_a = EstimatorConfig());
 }
 
 } // namespace acmpose

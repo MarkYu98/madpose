@@ -3,7 +3,6 @@
 
 #include <colmap/util/types.h>
 #include <PoseLib/solvers/p3p.h>
-#include <PoseLib/misc/re3q3.h>
 
 #include "pose.h"
 #include "utils.h"

@@ -121,7 +121,7 @@ setup(
     version="0.0.1",
     author="Yifan Yu",
     author_email="markyu98@outlook.com",
-    description="Relative pose estimation through affine correction of monocular depth priors.",
+    description='''Solvers and estimators described in the paper "Relative pose estimation through affine correction of monocular depth priors".''',
     long_description="",
     ext_modules=[CMakeExtension("acmpose")],
     cmdclass={"build_ext": CMakeBuild},

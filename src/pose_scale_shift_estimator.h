@@ -11,18 +11,10 @@ public:
     PoseScaleOffsetEstimator(const std::vector<Eigen::Vector2d> &x0, const std::vector<Eigen::Vector2d> &x1,
                             const std::vector<double> &depth0, const std::vector<double> &depth1, 
                             const Eigen::Vector2d &min_depth,
-                            const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1, 
-                            const std::vector<double> &uncert_weight = {}) : 
+                            const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1) : 
                             K0_(K0), K1_(K1), K0_inv_(K0.inverse()), K1_inv_(K1.inverse()), min_depth_(min_depth) { 
                             assert(x0.size() == x1.size() && x0.size() == depth0.size() && x0.size() == depth1.size());
                             
-                            if (uncert_weight.empty()) {
-                                uncert_weight_ = Eigen::VectorXd::Ones(x0.size());
-                            } else {
-                                assert(uncert_weight.size() == x0.size());
-                                uncert_weight_ = Eigen::Map<const Eigen::VectorXd>(uncert_weight.data(), uncert_weight.size());
-                            }
-
                             d0_ = Eigen::Map<const Eigen::VectorXd>(depth0.data(), depth0.size());
                             d1_ = Eigen::Map<const Eigen::VectorXd>(depth1.data(), depth1.size());
 
@@ -39,8 +31,6 @@ public:
     inline int non_minimal_sample_size() const { return 10; }
 
     inline int num_data() const { return x0_.cols(); }
-
-    double GetWeight(int i) const { return uncert_weight_(i); }
 
     int MinimalSolver(const std::vector<int>& sample, std::vector<PoseScaleOffset>* solutions) const;
 
@@ -63,7 +53,6 @@ private:
     Eigen::MatrixXd x0_, x1_;
     Eigen::VectorXd d0_, d1_;
     Eigen::Vector2d min_depth_;
-    Eigen::VectorXd uncert_weight_;
 };
 
 class PoseScaleOffsetOptimizer {
@@ -73,7 +62,6 @@ protected:
     const Eigen::VectorXd &d0_, &d1_;
     Eigen::Vector4d qvec_;
     Eigen::Vector3d tvec_;
-    Eigen::VectorXd uncert_weight_;
     double scale_, offset0_, offset1_;
     double min_depth_0_, min_depth_1_;
     OptimizerConfig config_;
@@ -89,10 +77,10 @@ public:
                      const std::vector<int> &indices_reproj, const std::vector<int> &indices_sampson,
                      const double &min_depth_0, const double &min_depth_1, 
                      const PoseScaleOffset &pose, 
-                     const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1, const Eigen::VectorXd &uncert_weight,
+                     const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1,
                      const OptimizerConfig& config = OptimizerConfig()) : 
                      K0_(K0), K1_(K1), K0_inv_(K0.inverse()), K1_inv_(K1.inverse()), 
-                     x0_(x0), x1_(x1), d0_(depth0), d1_(depth1), uncert_weight_(uncert_weight),
+                     x0_(x0), x1_(x1), d0_(depth0), d1_(depth1), 
                      indices_reproj_(indices_reproj), indices_sampson_(indices_sampson),
                      min_depth_0_(min_depth_0), min_depth_1_(min_depth_1), 
                      config_(config) {
@@ -101,6 +89,13 @@ public:
         offset0_ = pose.offset0;
         offset1_ = pose.offset1;
         scale_ = pose.scale;
+
+        if (config_.geom_loss_function.get() == nullptr)
+            config_.geom_loss_function.reset(new ceres::TrivialLoss());
+        if (config_.reproj_loss_function.get() == nullptr)
+            config_.reproj_loss_function.reset(new ceres::TrivialLoss());
+        if (config_.sampson_loss_function.get() == nullptr)
+            config_.sampson_loss_function.reset(new ceres::TrivialLoss());
     }
 
     void SetUp() {
@@ -109,21 +104,13 @@ public:
         ceres::LossFunction* geo_loss_func = config_.geom_loss_function.get();
         ceres::LossFunction* proj_loss_func = config_.reproj_loss_function.get();
         ceres::LossFunction* sampson_loss_func = config_.sampson_loss_function.get();
-        if (geo_loss_func == nullptr) {
-            geo_loss_func = new ceres::TrivialLoss();
-        }
-        if (proj_loss_func == nullptr) {
-            proj_loss_func = new ceres::TrivialLoss();
-        }
-        if (sampson_loss_func == nullptr) {
-            sampson_loss_func = new ceres::TrivialLoss();
-        }
+
         // geo_loss_func = new ceres::ScaledLoss(geo_loss_func, config_.weight_geometric, ceres::DO_NOT_TAKE_OWNERSHIP);
         // sampson_loss_func = new ceres::ScaledLoss(sampson_loss_func, config_.weight_sampson, ceres::DO_NOT_TAKE_OWNERSHIP);
 
         for (auto &i : indices_reproj_) {
             if (config_.use_reprojection) {
-                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(proj_loss_func, uncert_weight_(i), ceres::DO_NOT_TAKE_OWNERSHIP);
+                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(proj_loss_func, 1.0, ceres::DO_NOT_TAKE_OWNERSHIP);
                 Eigen::Vector3d x0_normalized = K0_inv_ * x0_.col(i);
                 Eigen::Vector3d x1_normalized = K1_inv_ * x1_.col(i);
                 x0_normalized = x0_normalized / x0_normalized[2];
@@ -141,7 +128,7 @@ public:
                 // problem_->AddResidualBlock(reproj_cost_1, weighted_loss, &scale_, &offset1_, qvec_.data(), tvec_.data());
             }
             if (config_.use_geometric) {
-                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(geo_loss_func, uncert_weight_(i), ceres::DO_NOT_TAKE_OWNERSHIP);
+                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(geo_loss_func, 1.0, ceres::DO_NOT_TAKE_OWNERSHIP);
                 ceres::CostFunction* geo_cost = LiftGeometryFunctor::Create(
                     x0_.col(i), x1_.col(i), d0_(i), d1_(i), K0_, K1_, config_.weight_geometric);
                 problem_->AddResidualBlock(geo_cost, weighted_loss, &scale_, &offset0_, &offset1_, qvec_.data(), tvec_.data());
@@ -150,7 +137,7 @@ public:
 
         for (auto &i : indices_sampson_) {
             if (config_.use_sampson) {
-                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(sampson_loss_func, uncert_weight_(i), ceres::DO_NOT_TAKE_OWNERSHIP);
+                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(sampson_loss_func, 1.0, ceres::DO_NOT_TAKE_OWNERSHIP);
                 Eigen::Vector3d x0 = K0_inv_ * x0_.col(i);
                 Eigen::Vector3d x1 = K1_inv_ * x1_.col(i);
                 ceres::CostFunction* sampson_cost = SampsonErrorFunctor::Create(x0, x1, K0_, K1_, config_.weight_sampson);
@@ -159,9 +146,17 @@ public:
         }
 
         if (problem_->HasParameterBlock(&scale_)) {
-            problem_->SetParameterLowerBound(&offset0_, 0, -min_depth_0_ + 1e-2); // offset0 >= -min_depth_0_
-            problem_->SetParameterLowerBound(&offset1_, 0, -min_depth_1_ + 1e-2); // offset1 >= -min_depth_1_
             problem_->SetParameterLowerBound(&scale_, 0, 1e-2); // scale >= 0.01
+        }
+        if (config_.min_depth_constraint && problem_->HasParameterBlock(&offset0_)) {
+            problem_->SetParameterLowerBound(&offset0_, 0, -min_depth_0_ + 1e-2); // offset0 >= -min_depth_(0)
+        }
+        if (config_.min_depth_constraint && problem_->HasParameterBlock(&offset1_)) {
+            problem_->SetParameterLowerBound(&offset1_, 0, -min_depth_1_ + 1e-2); // offset1 >= -min_depth_(1)
+        }
+        if (!config_.use_shift) {
+            if (problem_->HasParameterBlock(&offset0_)) problem_->SetParameterBlockConstant(&offset0_);
+            if (problem_->HasParameterBlock(&offset1_)) problem_->SetParameterBlockConstant(&offset1_);
         }
 
         if (problem_->HasParameterBlock(qvec_.data())) {
@@ -216,7 +211,6 @@ protected:
     const Eigen::VectorXd &d0_, &d1_;
     Eigen::Vector4d qvec_;
     Eigen::Vector3d tvec_;
-    Eigen::VectorXd uncert_weight_;
     double scale_, offset0_, offset1_;
     Eigen::Vector2d min_depth_; 
     OptimizerConfig config_;
@@ -235,10 +229,10 @@ public:
                      const std::vector<int> &indices_sampson,
                      const Eigen::Vector2d &min_depth,
                      const PoseScaleOffset &pose, 
-                     const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1, const Eigen::VectorXd &uncert_weight,
+                     const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1,
                      const OptimizerConfig& config = OptimizerConfig()) : 
                      K0_(K0), K1_(K1), K0_inv_(K0.inverse()), K1_inv_(K1.inverse()), 
-                     x0_(x0), x1_(x1), d0_(depth0), d1_(depth1), uncert_weight_(uncert_weight),
+                     x0_(x0), x1_(x1), d0_(depth0), d1_(depth1), 
                      indices_reproj_0_(indices_reproj_0), indices_reproj_1_(indices_reproj_1), indices_sampson_(indices_sampson),
                      min_depth_(min_depth), config_(config) {
         qvec_ = RotationMatrixToQuaternion<double>(pose.R());
@@ -246,6 +240,13 @@ public:
         offset0_ = pose.offset0;
         offset1_ = pose.offset1;
         scale_ = pose.scale;
+
+        if (config_.geom_loss_function.get() == nullptr)
+            config_.geom_loss_function.reset(new ceres::TrivialLoss());
+        if (config_.reproj_loss_function.get() == nullptr)
+            config_.reproj_loss_function.reset(new ceres::TrivialLoss());
+        if (config_.sampson_loss_function.get() == nullptr)
+            config_.sampson_loss_function.reset(new ceres::TrivialLoss());
     }
 
     void SetUp() {
@@ -254,27 +255,19 @@ public:
         ceres::LossFunction* geo_loss_func = config_.geom_loss_function.get();
         ceres::LossFunction* proj_loss_func = config_.reproj_loss_function.get();
         ceres::LossFunction* sampson_loss_func = config_.sampson_loss_function.get();
-        if (geo_loss_func == nullptr) {
-            geo_loss_func = new ceres::TrivialLoss();
-        }
-        if (proj_loss_func == nullptr) {
-            proj_loss_func = new ceres::TrivialLoss();
-        }
-        if (sampson_loss_func == nullptr) {
-            sampson_loss_func = new ceres::TrivialLoss();
-        }
+
         // geo_loss_func = new ceres::ScaledLoss(geo_loss_func, config_.weight_geometric, ceres::DO_NOT_TAKE_OWNERSHIP);
         // sampson_loss_func = new ceres::ScaledLoss(sampson_loss_func, config_.weight_sampson, ceres::DO_NOT_TAKE_OWNERSHIP);
 
         if (config_.use_reprojection) {
             for (auto &i : indices_reproj_0_) {
-                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(proj_loss_func, uncert_weight_(i), ceres::DO_NOT_TAKE_OWNERSHIP);
+                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(proj_loss_func, 1.0, ceres::DO_NOT_TAKE_OWNERSHIP);
                 ceres::CostFunction* reproj_cost_0 = LiftProjectionFunctor0::Create(
                     K0_inv_ * x0_.col(i), x1_.col(i), d0_(i), K1_);
                 problem_->AddResidualBlock(reproj_cost_0, weighted_loss, &offset0_, qvec_.data(), tvec_.data());
             }
             for (auto &i : indices_reproj_1_) {
-                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(proj_loss_func, uncert_weight_(i), ceres::DO_NOT_TAKE_OWNERSHIP);
+                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(proj_loss_func, 1.0, ceres::DO_NOT_TAKE_OWNERSHIP);
                 ceres::CostFunction* reproj_cost_1 = LiftProjectionFunctor1::Create(
                     K1_inv_ * x1_.col(i), x0_.col(i), d1_(i), K0_);
                 problem_->AddResidualBlock(reproj_cost_1, weighted_loss, &scale_, &offset1_, qvec_.data(), tvec_.data());
@@ -283,7 +276,7 @@ public:
 
         if (config_.use_sampson) {
             for (auto &i : indices_sampson_) {
-                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(sampson_loss_func, uncert_weight_(i), ceres::DO_NOT_TAKE_OWNERSHIP);
+                ceres::LossFunction* weighted_loss = new ceres::ScaledLoss(sampson_loss_func, 1.0, ceres::DO_NOT_TAKE_OWNERSHIP);
                 Eigen::Vector3d x0 = K0_inv_ * x0_.col(i);
                 Eigen::Vector3d x1 = K1_inv_ * x1_.col(i);
                 ceres::CostFunction* sampson_cost = SampsonErrorFunctor::Create(x0, x1, K0_, K1_, config_.weight_sampson);
@@ -294,11 +287,15 @@ public:
         if (problem_->HasParameterBlock(&scale_)) {
             problem_->SetParameterLowerBound(&scale_, 0, 1e-2); // scale >= 0
         }
-        if (problem_->HasParameterBlock(&offset0_)) {
+        if (config_.min_depth_constraint && problem_->HasParameterBlock(&offset0_)) {
             problem_->SetParameterLowerBound(&offset0_, 0, -min_depth_(0) + 1e-2); // offset0 >= -min_depth_(0)
         }
-        if (problem_->HasParameterBlock(&offset1_)) {
+        if (config_.min_depth_constraint && problem_->HasParameterBlock(&offset1_)) {
             problem_->SetParameterLowerBound(&offset1_, 0, -min_depth_(1) + 1e-2); // offset1 >= -min_depth_(1)
+        }
+        if (!config_.use_shift) {
+            if (problem_->HasParameterBlock(&offset0_)) problem_->SetParameterBlockConstant(&offset0_);
+            if (problem_->HasParameterBlock(&offset1_)) problem_->SetParameterBlockConstant(&offset1_);
         }
 
         if (problem_->HasParameterBlock(qvec_.data())) {
@@ -350,7 +347,7 @@ std::pair<PoseScaleOffset, ransac_lib::RansacStatistics>
 EstimatePoseScaleOffset(const std::vector<Eigen::Vector2d> &x0, const std::vector<Eigen::Vector2d> &x1,
                         const std::vector<double> &depth0, const std::vector<double> &depth1, const Eigen::Vector2d &min_depth,
                         const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1,
-                        const ransac_lib::LORansacOptions& options, const std::vector<double> &uncert_weight = {});
+                        const ransac_lib::LORansacOptions& options);
 
 } // namespace acmpose
 

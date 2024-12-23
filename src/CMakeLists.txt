@@ -2,8 +2,6 @@
 set(SOURCES
     bindings.cpp
     solver.cpp
-    scale_offset_estimator.cpp
-    point_cloud_pose_estimator.cpp
     pose_scale_shift_estimator.cpp 
     hybrid_pose_estimator.cpp
     hybrid_pose_shared_focal_estimator.cpp

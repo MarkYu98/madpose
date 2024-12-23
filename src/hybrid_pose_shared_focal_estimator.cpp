@@ -13,7 +13,7 @@ HybridEstimatePoseScaleOffsetSharedFocal(
     const Eigen::Vector2d &min_depth, 
     const Eigen::Vector2d &pp0, const Eigen::Vector2d &pp1,
     const ExtendedHybridLORansacOptions& options, 
-    const std::vector<double> &uncert_weights) {
+    const EstimatorConfig &est_config) {
     ExtendedHybridLORansacOptions ransac_options(options);
     
     std::random_device rand_dev;
@@ -36,8 +36,8 @@ HybridEstimatePoseScaleOffsetSharedFocal(
     double sampson_squared_weight = ransac_options.data_type_weights_[1];
 
     // ransac_options.data_type_weights_[1] *= 0.5;
-    // HybridPoseSharedFocalEstimator solver(x0_norm, x1_norm, depth0, depth1, min_depth, // max_depth, 
-    //    norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_, uncert_weights);
+    // HybridPoseSharedFocalEstimator solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
+    //    norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_);
     
     ransac_options.data_type_weights_.push_back(ransac_options.data_type_weights_[1]);
     // ransac_options.data_type_weights_.push_back(ransac_options.squared_inlier_thresholds_[0] / 1e-2);
@@ -45,8 +45,8 @@ HybridEstimatePoseScaleOffsetSharedFocal(
     // ransac_options.squared_inlier_thresholds_.push_back(1e-2);
     ransac_options.data_type_weights_[1] = ransac_options.data_type_weights_[0];
     ransac_options.squared_inlier_thresholds_[1] = ransac_options.squared_inlier_thresholds_[0];
-    HybridPoseSharedFocalEstimator3 solver(x0_norm, x1_norm, depth0, depth1, min_depth, // max_depth, 
-        norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_, uncert_weights);
+    HybridPoseSharedFocalEstimator3 solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
+        norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_, est_config);
 
     PoseScaleOffsetSharedFocal best_solution;
     ransac_lib::HybridRansacStatistics ransac_stats;
@@ -70,7 +70,7 @@ int HybridPoseSharedFocalEstimator::MinimalSolver(
         std::vector<PoseScaleOffsetSharedFocal> sols;
         int num_sols = estimate_scale_shift_pose_shared_focal(x0, x1, d0_(sample[0]), d1_(sample[0]), &sols, false);
         for (int i = 0; i < num_sols; i++) {
-            if (sols[i].offset0 > -min_depth_(0) && sols[i].offset1 > -min_depth_(1) * sols[i].scale) {
+            if (!est_config_.min_depth_constraint || (sols[i].offset0 > -min_depth_(0) && sols[i].offset1 > -min_depth_(1) * sols[i].scale)) {
                 PoseScaleOffsetSharedFocal sol = sols[i];
                 sol.offset1 /= sol.scale;
                 models->push_back(sol);
@@ -114,7 +114,7 @@ int HybridPoseSharedFocalEstimator::MinimalSolver(
             Eigen::VectorXd x = (A.transpose() * A).ldlt().solve(A.transpose() * p3d.row(2).transpose());
             double s0 = x(0);
             double offset0 = x(1) / s0;
-            if (offset0 < -min_depth_(0)) continue;
+            if (est_config_.min_depth_constraint && offset0 < -min_depth_(0)) continue;
 
             p3d = p3d / s0;
             pose.t = pose.t / s0;
@@ -124,7 +124,7 @@ int HybridPoseSharedFocalEstimator::MinimalSolver(
             x = (A.transpose() * A).ldlt().solve(A.transpose() * p3d.row(2).transpose());
             double scale = x(0);
             double offset1 = x(1) / scale;
-            if (offset1 < -min_depth_(1)) continue;
+            if (est_config_.min_depth_constraint && offset1 < -min_depth_(1)) continue;
 
             PoseScaleOffsetSharedFocal sol(pose.R(), pose.t, scale, offset0, offset1, f);
             models->push_back(sol);
@@ -136,22 +136,16 @@ int HybridPoseSharedFocalEstimator::MinimalSolver(
 int HybridPoseSharedFocalEstimator::NonMinimalSolver(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetSharedFocal* solution) const {
     if (sample[0].size() < 4 || sample[1].size() < 6) return 0;
     return 0;
-
-    // SharedFocalOptimizerConfig config;
-    // config.use_geometric = false;
-    // config.solver_options.max_num_iterations = 25;
-    // config.use_sampson = true;
-    // config.use_reprojection = true;
-    // config.weight_sampson = sampson_squared_weight_;
-    // SharedFocalOptimizer optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], min_depth_, *solution, uncert_weight_, config);
-    // optim.SetUp();
-    // if (!optim.Solve()) return 0;
-    // *solution = optim.GetSolution();
-    
-    // return 1;
 }
 
-double HybridPoseSharedFocalEstimator::EvaluateModelOnPoint(const PoseScaleOffsetSharedFocal& model, int t, int i, double squared_thres) const {
+double HybridPoseSharedFocalEstimator::EvaluateModelOnPoint(const PoseScaleOffsetSharedFocal& model, int t, int i, bool is_for_inlier) const {
+    if (!is_for_inlier && est_config_.score_type == EstimatorOption::EPI_ONLY && t != 2) {
+        return std::numeric_limits<double>::max();
+    }
+    if (!is_for_inlier && est_config_.score_type == EstimatorOption::MD_ONLY && t == 2) {
+        return std::numeric_limits<double>::max();
+    }
+
     Eigen::Matrix3d K_inv, K;
     K << model.focal, 0.0, 0.0, 0.0, model.focal, 0.0, 0.0, 0.0, 1.0;
     K_inv << 1.0 / model.focal, 0.0, 0.0, 0.0, 1.0 / model.focal, 0.0, 0.0, 0.0, 1.0;
@@ -184,21 +178,11 @@ double HybridPoseSharedFocalEstimator::EvaluateModelOnPoint(const PoseScaleOffse
 }
 
 // Linear least squares solver. 
-void HybridPoseSharedFocalEstimator::LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetSharedFocal* model, bool final) const {
+void HybridPoseSharedFocalEstimator::LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetSharedFocal* model) const {
     if (sample[0].size() < 4 || sample[1].size() < 6) {
         return;
     }
     return;
-    // SharedFocalOptimizerConfig config;
-    // config.use_geometric = false;
-    // config.use_sampson = true;
-    // config.use_reprojection = true;
-    // config.weight_sampson = sampson_squared_weight_;
-    // SharedFocalOptimizer optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], min_depth_, 
-    //     *model, uncert_weight_, config);
-    // optim.SetUp();
-    // if (!optim.Solve()) return;
-    // *model = optim.GetSolution();
 }
 
 int HybridPoseSharedFocalEstimator3::NonMinimalSolver(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetSharedFocal* solution) const {
@@ -210,9 +194,14 @@ int HybridPoseSharedFocalEstimator3::NonMinimalSolver(const std::vector<std::vec
     config.solver_options.max_num_iterations = 25;
     config.use_sampson = true;
     config.use_reprojection = true;
+    if (est_config_.LO_type == EstimatorOption::MD_ONLY)
+        config.use_sampson = false;
+    if (est_config_.LO_type == EstimatorOption::EPI_ONLY)
+        config.use_reprojection = false;
     config.weight_sampson = sampson_squared_weight_;
-    SharedFocalOptimizer3 optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, // max_depth_, 
-        *solution, uncert_weight_, config);
+    config.min_depth_constraint = est_config_.min_depth_constraint;
+    SharedFocalOptimizer3 optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
+        *solution, config);
     optim.SetUp();
     if (!optim.Solve()) return 0;
     *solution = optim.GetSolution();
@@ -220,7 +209,14 @@ int HybridPoseSharedFocalEstimator3::NonMinimalSolver(const std::vector<std::vec
     return 1;
 }
 
-double HybridPoseSharedFocalEstimator3::EvaluateModelOnPoint(const PoseScaleOffsetSharedFocal& model, int t, int i, double squared_thres, bool gradcut) const {
+double HybridPoseSharedFocalEstimator3::EvaluateModelOnPoint(const PoseScaleOffsetSharedFocal& model, int t, int i, bool is_for_inlier) const {
+    if (!is_for_inlier && est_config_.score_type == EstimatorOption::EPI_ONLY && t != 2) {
+        return std::numeric_limits<double>::max();
+    }
+    if (!is_for_inlier && est_config_.score_type == EstimatorOption::MD_ONLY && t == 2) {
+        return std::numeric_limits<double>::max();
+    }
+
     Eigen::Matrix3d K_inv, K;
     K << model.focal, 0.0, 0.0, 0.0, model.focal, 0.0, 0.0, 0.0, 1.0;
     K_inv << 1.0 / model.focal, 0.0, 0.0, 0.0, 1.0 / model.focal, 0.0, 0.0, 0.0, 1.0;
@@ -259,18 +255,25 @@ double HybridPoseSharedFocalEstimator3::EvaluateModelOnPoint(const PoseScaleOffs
 }
 
 // Linear least squares solver. 
-void HybridPoseSharedFocalEstimator3::LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetSharedFocal* model, bool final) const {
+void HybridPoseSharedFocalEstimator3::LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetSharedFocal* model) const {
     if (sample[0].size() < 4 || sample[1].size() < 4 || sample[2].size() < 6) {
         return;
     }
-
+    
     SharedFocalOptimizerConfig config;
     config.use_geometric = false;
     config.use_sampson = true;
     config.use_reprojection = true;
+    config.solver_options.max_num_iterations = 25;
+
+    if (est_config_.LO_type == EstimatorOption::MD_ONLY)
+        config.use_sampson = false;
+    if (est_config_.LO_type == EstimatorOption::EPI_ONLY)
+        config.use_reprojection = false;
     config.weight_sampson = sampson_squared_weight_;
+    config.min_depth_constraint = est_config_.min_depth_constraint;
     SharedFocalOptimizer3 optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
-        *model, uncert_weight_, config);
+        *model, config);
     optim.SetUp();
     if (!optim.Solve()) return;
     *model = optim.GetSolution();

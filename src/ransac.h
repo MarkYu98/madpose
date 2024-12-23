@@ -1,5 +1,5 @@
-#ifndef UNCERTAINTY_RANSAC_H_
-#define UNCERTAINTY_RANSAC_H_
+#ifndef RANSAC_H
+#define RANSAC_H
 
 #include <algorithm>
 #include <cmath>
@@ -9,7 +9,6 @@
 #include <random>
 #include <vector>
 
-#include <RansacLib/ransac.h>
 #include <RansacLib/sampling.h>
 #include <RansacLib/utils.h>
 
@@ -21,7 +20,7 @@ namespace acmpose {
 // 2012]. Iteratively re-weighted least-squares optimization is optional.
 template <class Model, class ModelVector, class Solver,
           class Sampler = UniformSampling<Solver> >
-class UncertaintyLOMSAC : public RansacBase {
+class LocallyOptimizedMSAC : public RansacBase {
  public:
   // Estimates a model using a given solver. Notice that the solver contains
   // all data and is responsible to implement a non-minimal solver and
@@ -201,8 +200,7 @@ class UncertaintyLOMSAC : public RansacBase {
     *score = 0.0;
     for (int i = 0; i < kNumData; ++i) {
       double squared_error = solver.EvaluateModelOnPoint(model, i);
-      double w = solver.GetWeight(i);
-      *score += ComputeScore(squared_error, squared_inlier_threshold) * w;
+      *score += ComputeScore(squared_error, squared_inlier_threshold);
     }
   }
 
@@ -334,4 +332,4 @@ class UncertaintyLOMSAC : public RansacBase {
 
 }  // namespace acmpose
 
-#endif  // UNCERTAINTY_RANSAC_H_
+#endif  // RANSAC_H

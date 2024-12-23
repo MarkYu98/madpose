@@ -1,5 +1,5 @@
 #include "pose_scale_shift_estimator.h"
-#include "uncertainty_ransac.h"
+#include "ransac.h"
 #include "solver.h"
 
 namespace acmpose {
@@ -9,21 +9,20 @@ EstimatePoseScaleOffset(const std::vector<Eigen::Vector2d> &x0, const std::vecto
                                const std::vector<double> &depth0, const std::vector<double> &depth1, 
                                const Eigen::Vector2d &min_depth,
                                const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1, 
-                               const ransac_lib::LORansacOptions& options, 
-                               const std::vector<double> &uncert_weight) {
+                               const ransac_lib::LORansacOptions& options) {
     ransac_lib::LORansacOptions ransac_options(options);
     
     std::random_device rand_dev;
     ransac_options.random_seed_ = 0;
 
     PoseScaleOffsetEstimator solver(x0, x1, depth0, depth1, min_depth,
-        K0, K1, uncert_weight);
+        K0, K1);
     solver.squared_inlier_thres = ransac_options.squared_inlier_threshold_;
 
     PoseScaleOffset best_solution;
     ransac_lib::RansacStatistics ransac_stats;
 
-    UncertaintyLOMSAC<PoseScaleOffset, std::vector<PoseScaleOffset>, PoseScaleOffsetEstimator> lomsac;
+    LocallyOptimizedMSAC<PoseScaleOffset, std::vector<PoseScaleOffset>, PoseScaleOffsetEstimator> lomsac;
     lomsac.EstimateModel(ransac_options, solver, &best_solution, &ransac_stats);
     // poselib::RansacOptions opt;
     // opt.min_iterations = ransac_options.min_num_iterations_;
@@ -59,7 +58,7 @@ int PoseScaleOffsetEstimator::NonMinimalSolver(const std::vector<int>& sample, P
     OptimizerConfig config;
     config.use_geometric = false;
     PoseScaleOffsetOptimizer optim(x0_, x1_, d0_, d1_, sample, {}, min_depth_(0), min_depth_(1), 
-        *solution, K0_, K1_, uncert_weight_, config);
+        *solution, K0_, K1_, config);
     optim.SetUp();
     if (!optim.Solve()) return 0;
     *solution = optim.GetSolution();
@@ -90,7 +89,7 @@ void PoseScaleOffsetEstimator::LeastSquares(const std::vector<int>& sample, Pose
     config.use_geometric = false;
     config.weight_geometric = 1.0;
     PoseScaleOffsetOptimizer optim(x0_, x1_, d0_, d1_, sample, {}, min_depth_(0), min_depth_(1), 
-        *solution, K0_, K1_, uncert_weight_, config);
+        *solution, K0_, K1_, config);
     optim.SetUp();
     if (!optim.Solve()) return;
     *solution = optim.GetSolution();
