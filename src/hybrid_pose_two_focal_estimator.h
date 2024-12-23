@@ -6,7 +6,6 @@
 #include "hybrid_ransac.h"
 #include "solver.h"
 #include "estimator_config.h"
-#include <iostream>
 
 namespace acmpose {
 
@@ -46,16 +45,17 @@ public:
 
     void min_sample_sizes(std::vector<std::vector<int>>* min_sample_sizes) const {
         min_sample_sizes->resize(2);
-        min_sample_sizes->at(0) = {4, 0};
-        min_sample_sizes->at(1) = {0, 7};
+        min_sample_sizes->at(0) = {4, 4, 0};
+        min_sample_sizes->at(1) = {0, 0, 7};
     }
 
-    inline int num_data_types() const { return 2; }
+    inline int num_data_types() const { return 3; }
 
     void num_data(std::vector<int>* num_data) const {
-        num_data->resize(2);
+        num_data->resize(3);
         num_data->at(0) = x0_norm_.cols();
         num_data->at(1) = x0_norm_.cols();
+        num_data->at(2) = x0_norm_.cols();
     }
 
     void solver_probabilities(std::vector<double>* probabilities) const {
@@ -85,42 +85,6 @@ public:
     // Linear least squares solver. 
     void LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetTwoFocal* model) const;
 
-    double EvaluateModel(const PoseScaleOffsetTwoFocal& model) const;
-
-    void GetInliers(const PoseScaleOffsetTwoFocal& model, std::vector<int>* inliers) const;
-
-    std::string GetTimingInfo() const {
-        std::stringstream ss;
-        int solver_sum_0 = 0, solver_sum_1 = 0;
-        for (auto &t : solver_time[0]) solver_sum_0 += t;
-        for (auto &t : solver_time[1]) solver_sum_1 += t;
-        double solver_avg_0 = double(solver_sum_0) / solver_time[0].size();
-        double solver_avg_1 = double(solver_sum_1) / solver_time[1].size();
-
-        ss << "Solver 0: sum " << solver_sum_0 << "ms; avg " << solver_avg_0 << "ms" << std::endl;
-        ss << "Solver 1: sum " << solver_sum_1 << "ms; avg " << solver_avg_1 << "ms" << std::endl;
-
-        int nonmin_sum_0 = 0, nonmin_sum_1 = 0;
-        for (auto &t : nonmin_time[0]) nonmin_sum_0 += t;
-        for (auto &t : nonmin_time[1]) nonmin_sum_1 += t;
-        double nonmin_avg_0 = double(nonmin_sum_0) / nonmin_time[0].size();
-        double nonmin_avg_1 = double(nonmin_sum_1) / nonmin_time[1].size();
-
-        ss << "Nonmin 0: sum " << nonmin_sum_0 << "ms; avg " << nonmin_avg_0 << "ms" << std::endl;
-        ss << "Nonmin 1: sum " << nonmin_sum_1 << "ms; avg " << nonmin_avg_1 << "ms" << std::endl;
-
-        int lsq_sum_0 = 0, lsq_sum_1 = 0;
-        for (auto &t : lsq_time[0]) lsq_sum_0 += t;
-        for (auto &t : lsq_time[1]) lsq_sum_1 += t;
-        double lsq_avg_0 = double(lsq_sum_0) / lsq_time[0].size();
-        double lsq_avg_1 = double(lsq_sum_1) / lsq_time[1].size();
-
-        ss << "LSQ 0: sum " << lsq_sum_0 << "ms; avg " << lsq_avg_0 << "ms" << std::endl;
-        ss << "LSQ 1: sum " << lsq_sum_1 << "ms; avg " << lsq_avg_1 << "ms" << std::endl;
-
-        return ss.str();
-    }
-
 protected:
     Eigen::MatrixXd x0_norm_, x1_norm_;
     Eigen::VectorXd d0_, d1_;
@@ -147,21 +111,6 @@ public:
                          const EstimatorConfig &est_config = EstimatorConfig()) : 
                             HybridTwoFocalPoseEstimator(x0_norm, x1_norm, depth0, depth1, min_depth, 
                                 norm_scale, sampson_squared_weight, squared_inlier_thresholds, est_config) {}
-
-    void min_sample_sizes(std::vector<std::vector<int>>* min_sample_sizes) const {
-        min_sample_sizes->resize(2);
-        min_sample_sizes->at(0) = {4, 4, 0};
-        min_sample_sizes->at(1) = {0, 0, 7};
-    }
-
-    inline int num_data_types() const { return 3; }
-
-    void num_data(std::vector<int>* num_data) const {
-        num_data->resize(3);
-        num_data->at(0) = x0_norm_.cols();
-        num_data->at(1) = x0_norm_.cols();
-        num_data->at(2) = x0_norm_.cols();
-    }
 
     int MinimalSolver(const std::vector<std::vector<int>>& sample,
                       const int solver_idx, std::vector<PoseScaleOffsetTwoFocal>* models) const {

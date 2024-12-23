@@ -1,5 +1,5 @@
 #include <colmap/geometry/triangulation.h>
-#include <PoseLib/misc/essential.h>
+#include <PoseLib/poselib.h>
 #include <PoseLib/solvers/relpose_5pt.h>
 #include "solver.h"
 #include "hybrid_pose_estimator.h"
