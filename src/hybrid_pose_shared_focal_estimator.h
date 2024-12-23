@@ -9,9 +9,9 @@
 
 namespace acmpose {
 
-class HybridPoseSharedFocalEstimator {
+class HybridSharedFocalPoseEstimator {
 public:
-    HybridPoseSharedFocalEstimator(const std::vector<Eigen::Vector2d> &x0_norm, const std::vector<Eigen::Vector2d> &x1_norm,
+    HybridSharedFocalPoseEstimator(const std::vector<Eigen::Vector2d> &x0_norm, const std::vector<Eigen::Vector2d> &x1_norm,
                         const std::vector<double> &depth0, const std::vector<double> &depth1, 
                         const Eigen::Vector2d &min_depth, 
                         const double &norm_scale = 1.0,
@@ -33,7 +33,7 @@ public:
                             }
                         }  
 
-    ~HybridPoseSharedFocalEstimator() {}
+    ~HybridSharedFocalPoseEstimator() {}
 
     inline int num_minimal_solvers() const { return 2; }
 
@@ -92,16 +92,16 @@ protected:
     double norm_scale_;
 };
 
-class HybridPoseSharedFocalEstimator3 : public HybridPoseSharedFocalEstimator {
+class HybridSharedFocalPoseEstimator3 : public HybridSharedFocalPoseEstimator {
 public:
-    HybridPoseSharedFocalEstimator3(const std::vector<Eigen::Vector2d> &x0_norm, const std::vector<Eigen::Vector2d> &x1_norm,
+    HybridSharedFocalPoseEstimator3(const std::vector<Eigen::Vector2d> &x0_norm, const std::vector<Eigen::Vector2d> &x1_norm,
                          const std::vector<double> &depth0, const std::vector<double> &depth1, 
                          const Eigen::Vector2d &min_depth, 
                          const double &norm_scale = 1.0,
                          const double &sampson_squared_weight = 1.0,
                          const std::vector<double> &squared_inlier_thresholds = {},
                          const EstimatorConfig &est_config = EstimatorConfig()) : 
-                            HybridPoseSharedFocalEstimator(x0_norm, x1_norm, depth0, depth1, min_depth,
+                            HybridSharedFocalPoseEstimator(x0_norm, x1_norm, depth0, depth1, min_depth,
                                 norm_scale, sampson_squared_weight, squared_inlier_thresholds, est_config) {}
 
     void min_sample_sizes(std::vector<std::vector<int>>* min_sample_sizes) const {
@@ -122,7 +122,7 @@ public:
     int MinimalSolver(const std::vector<std::vector<int>>& sample,
                       const int solver_idx, std::vector<PoseScaleOffsetSharedFocal>* models) const {
         std::vector<std::vector<int>> sample_2 = {sample[0], sample[2]};
-        return HybridPoseSharedFocalEstimator::MinimalSolver(sample_2, solver_idx, models);
+        return HybridSharedFocalPoseEstimator::MinimalSolver(sample_2, solver_idx, models);
     }
 
     // Returns 0 if no model could be estimated and 1 otherwise.
@@ -134,133 +134,6 @@ public:
 
     // Linear least squares solver. 
     void LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetSharedFocal* model) const;
-};
-
-class SharedFocalOptimizer3 {
-protected:
-    const Eigen::MatrixXd &x0_, &x1_;
-    const Eigen::VectorXd &d0_, &d1_;
-    Eigen::Vector4d qvec_;
-    Eigen::Vector3d tvec_;
-    double focal_;
-    double scale_, offset0_, offset1_;
-    Eigen::Vector2d min_depth_; 
-    SharedFocalOptimizerConfig config_;
-
-    const std::vector<int> &indices_reproj_0_, &indices_reproj_1_;
-    const std::vector<int> &indices_sampson_;
-
-    // ceres
-    std::unique_ptr<ceres::Problem> problem_;
-    ceres::Solver::Summary summary_;
-public:
-    SharedFocalOptimizer3(const Eigen::MatrixXd &x0, const Eigen::MatrixXd &x1, 
-                          const Eigen::VectorXd &depth0, const Eigen::VectorXd &depth1,
-                          const std::vector<int> &indices_reproj_0, const std::vector<int> &indices_reproj_1, 
-                          const std::vector<int> &indices_sampson,
-                          const Eigen::Vector2d &min_depth,  
-                          const PoseScaleOffsetSharedFocal &pose, 
-                          const SharedFocalOptimizerConfig& config = SharedFocalOptimizerConfig()) : 
-                     x0_(x0), x1_(x1), d0_(depth0), d1_(depth1), 
-                     indices_reproj_0_(indices_reproj_0), indices_reproj_1_(indices_reproj_1), indices_sampson_(indices_sampson),
-                     min_depth_(min_depth), config_(config) {
-        qvec_ = RotationMatrixToQuaternion<double>(pose.R());
-        tvec_ = pose.t();
-        offset0_ = pose.offset0;
-        offset1_ = pose.offset1;
-        scale_ = pose.scale;
-        focal_ = pose.focal;
-
-        if (config_.geom_loss_function.get() == nullptr)
-            config_.geom_loss_function.reset(new ceres::TrivialLoss());
-        if (config_.reproj_loss_function.get() == nullptr)
-            config_.reproj_loss_function.reset(new ceres::TrivialLoss());
-        if (config_.sampson_loss_function.get() == nullptr)
-            config_.sampson_loss_function.reset(new ceres::TrivialLoss());
-    }
-
-    void SetUp() {
-        problem_.reset(new ceres::Problem(config_.problem_options));
-
-        ceres::LossFunction* geo_loss_func = config_.geom_loss_function.get();
-        ceres::LossFunction* proj_loss_func = config_.reproj_loss_function.get();
-        ceres::LossFunction* sampson_loss_func = config_.sampson_loss_function.get();
-
-        if (config_.use_reprojection) {
-            for (auto &i : indices_reproj_0_) {
-                ceres::CostFunction* reproj_cost_0 = LiftProjectionSharedFocalFunctor0::Create(x0_.col(i), x1_.col(i), d0_(i));
-                problem_->AddResidualBlock(reproj_cost_0, proj_loss_func, &offset0_, qvec_.data(), tvec_.data(), &focal_);
-            }
-            for (auto &i : indices_reproj_1_) {
-                ceres::CostFunction* reproj_cost_1 = LiftProjectionSharedFocalFunctor1::Create(x1_.col(i), x0_.col(i), d1_(i));
-                problem_->AddResidualBlock(reproj_cost_1, proj_loss_func, &scale_, &offset1_, qvec_.data(), tvec_.data(), &focal_);
-            }
-        }
-
-        for (auto &i : indices_sampson_) {
-            if (config_.use_sampson) {
-                ceres::CostFunction* sampson_cost = SampsonErrorSharedFocalFunctor::Create(x0_.col(i), x1_.col(i), config_.weight_sampson);
-                problem_->AddResidualBlock(sampson_cost, sampson_loss_func, qvec_.data(), tvec_.data(), &focal_);
-            }
-        }
-
-        if (problem_->HasParameterBlock(&scale_)) {
-            problem_->SetParameterLowerBound(&scale_, 0, 1e-2); // scale >= 0
-        }
-        if (config_.min_depth_constraint && problem_->HasParameterBlock(&offset0_)) {
-            problem_->SetParameterLowerBound(&offset0_, 0, -min_depth_(0) + 1e-2); // offset0 >= -min_depth_(0)
-        }
-        if (config_.min_depth_constraint && problem_->HasParameterBlock(&offset1_)) {
-            problem_->SetParameterLowerBound(&offset1_, 0, -min_depth_(1) + 1e-2); // offset1 >= -min_depth_(1)
-        }
-        if (!config_.use_shift) {
-            if (problem_->HasParameterBlock(&offset0_)) problem_->SetParameterBlockConstant(&offset0_);
-            if (problem_->HasParameterBlock(&offset1_)) problem_->SetParameterBlockConstant(&offset1_);
-        }
-
-        if (problem_->HasParameterBlock(qvec_.data())) {
-            if (config_.constant_pose) {
-                problem_->SetParameterBlockConstant(qvec_.data());
-                problem_->SetParameterBlockConstant(tvec_.data());
-            }
-            else {
-            #ifdef CERES_PARAMETERIZATION_ENABLED
-                ceres::LocalParameterization* quaternion_parameterization = 
-                    new ceres::QuaternionParameterization;
-                problem_->SetParameterization(qvec_.data(), quaternion_parameterization);
-            #else
-                ceres::Manifold* quaternion_manifold = 
-                    new ceres::QuaternionManifold;
-                problem_->SetManifold(qvec_.data(), quaternion_manifold);
-            #endif
-            }
-        }
-    }
-
-    bool Solve() {
-        if (problem_->NumResiduals() == 0) return false;
-        ceres::Solver::Options solver_options = config_.solver_options;
-    
-        solver_options.linear_solver_type = ceres::DENSE_QR;
-
-        solver_options.num_threads = 1; 
-        // colmap::GetEffectiveNumThreads(solver_options.num_threads);
-        #if CERES_VERSION_MAJOR < 2
-        solver_options.num_linear_solver_threads =
-            colmap::GetEffectiveNumThreads(solver_options.num_linear_solver_threads);
-        #endif  // CERES_VERSION_MAJOR
-
-        std::string solver_error;
-        CHECK(solver_options.IsValid(&solver_error)) << solver_error;
-
-        ceres::Solve(solver_options, problem_.get(), &summary_);
-        return true;
-    }
-
-    PoseScaleOffsetSharedFocal GetSolution() {
-        Eigen::Matrix3d R = QuaternionToRotationMatrix<double>(qvec_);
-        return PoseScaleOffsetSharedFocal(R, tvec_, scale_, offset0_, offset1_, focal_);
-    }
 };
 
 std::pair<PoseScaleOffsetSharedFocal, ransac_lib::HybridRansacStatistics> 

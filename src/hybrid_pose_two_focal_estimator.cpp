@@ -42,7 +42,7 @@ HybridEstimatePoseScaleOffsetTwoFocal(
     double sampson_squared_weight = ransac_options.data_type_weights_[1];
 
     // ransac_options.data_type_weights_[1] *= 0.5;
-    // HybridPoseTwoFocalEstimator solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
+    // HybridTwoFocalPoseEstimator solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
     //    norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_);
     
     ransac_options.data_type_weights_.push_back(ransac_options.data_type_weights_[1]);
@@ -51,14 +51,14 @@ HybridEstimatePoseScaleOffsetTwoFocal(
     // ransac_options.squared_inlier_thresholds_.push_back(1e-2);
     ransac_options.data_type_weights_[1] = ransac_options.data_type_weights_[0];
     ransac_options.squared_inlier_thresholds_[1] = ransac_options.squared_inlier_thresholds_[0];
-    HybridPoseTwoFocalEstimator3 solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
+    HybridTwoFocalPoseEstimator3 solver(x0_norm, x1_norm, depth0, depth1, min_depth, 
         norm_scale, sampson_squared_weight, ransac_options.squared_inlier_thresholds_, est_config);
 
     PoseScaleOffsetTwoFocal best_solution;
     ransac_lib::HybridRansacStatistics ransac_stats;
 
-    // HybridUncertaintyLOMSAC<PoseScaleOffsetTwoFocal, std::vector<PoseScaleOffsetTwoFocal>, HybridPoseTwoFocalEstimator> lomsac;
-    HybridUncertaintyLOMSAC<PoseScaleOffsetTwoFocal, std::vector<PoseScaleOffsetTwoFocal>, HybridPoseTwoFocalEstimator3> lomsac;
+    // HybridUncertaintyLOMSAC<PoseScaleOffsetTwoFocal, std::vector<PoseScaleOffsetTwoFocal>, HybridTwoFocalPoseEstimator> lomsac;
+    HybridUncertaintyLOMSAC<PoseScaleOffsetTwoFocal, std::vector<PoseScaleOffsetTwoFocal>, HybridTwoFocalPoseEstimator3> lomsac;
     lomsac.EstimateModel(ransac_options, solver, &best_solution, &ransac_stats);
 
     // std::cout << solver.GetTimingInfo() << std::endl;
@@ -96,7 +96,7 @@ std::pair<double, double> bougnoux_focals(const Eigen::Matrix3d &F) {
     return std::make_pair(f1, f2);
 }
 
-int HybridPoseTwoFocalEstimator::MinimalSolver(
+int HybridTwoFocalPoseEstimator::MinimalSolver(
     const std::vector<std::vector<int>>& sample,
     const int solver_idx, std::vector<PoseScaleOffsetTwoFocal>* models) const {
     models->clear();
@@ -204,11 +204,11 @@ int HybridPoseTwoFocalEstimator::MinimalSolver(
     return models->size();
 }
 
-int HybridPoseTwoFocalEstimator::NonMinimalSolver(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetTwoFocal* solution) const {
+int HybridTwoFocalPoseEstimator::NonMinimalSolver(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetTwoFocal* solution) const {
     return 0;
 }
 
-double HybridPoseTwoFocalEstimator::EvaluateModelOnPoint(const PoseScaleOffsetTwoFocal& model, int t, int i, bool is_for_inlier) const {
+double HybridTwoFocalPoseEstimator::EvaluateModelOnPoint(const PoseScaleOffsetTwoFocal& model, int t, int i, bool is_for_inlier) const {
     if (!is_for_inlier && est_config_.score_type == EstimatorOption::EPI_ONLY && t != 2) {
         return std::numeric_limits<double>::max();
     }
@@ -250,11 +250,11 @@ double HybridPoseTwoFocalEstimator::EvaluateModelOnPoint(const PoseScaleOffsetTw
 }
 
 // Linear least squares solver. 
-void HybridPoseTwoFocalEstimator::LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetTwoFocal* model) const {
+void HybridTwoFocalPoseEstimator::LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetTwoFocal* model) const {
     return;
 }
 
-int HybridPoseTwoFocalEstimator3::NonMinimalSolver(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetTwoFocal* solution) const {
+int HybridTwoFocalPoseEstimator3::NonMinimalSolver(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetTwoFocal* solution) const {
     if (sample[0].size() < 4 || sample[1].size() < 4 || sample[2].size() < 7) {
         return 0;
     } 
@@ -269,7 +269,7 @@ int HybridPoseTwoFocalEstimator3::NonMinimalSolver(const std::vector<std::vector
         config.use_reprojection = false;
     config.weight_sampson = sampson_squared_weight_;
     config.min_depth_constraint = est_config_.min_depth_constraint;
-    TwoFocalOptimizer3 optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
+    HybridTwoFocalPoseOptimizer optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
         *solution, config);
     optim.SetUp();
     if (!optim.Solve()) 
@@ -278,7 +278,7 @@ int HybridPoseTwoFocalEstimator3::NonMinimalSolver(const std::vector<std::vector
     return 1;
 }
 
-double HybridPoseTwoFocalEstimator3::EvaluateModelOnPoint(const PoseScaleOffsetTwoFocal& model, int t, int i, bool is_for_inlier) const {
+double HybridTwoFocalPoseEstimator3::EvaluateModelOnPoint(const PoseScaleOffsetTwoFocal& model, int t, int i, bool is_for_inlier) const {
     if (!is_for_inlier && est_config_.score_type == EstimatorOption::EPI_ONLY && t != 2) {
         return std::numeric_limits<double>::max();
     }
@@ -326,7 +326,7 @@ double HybridPoseTwoFocalEstimator3::EvaluateModelOnPoint(const PoseScaleOffsetT
 }
 
 // Linear least squares solver. 
-void HybridPoseTwoFocalEstimator3::LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetTwoFocal* model) const {
+void HybridTwoFocalPoseEstimator3::LeastSquares(const std::vector<std::vector<int>>& sample, const int solver_idx, PoseScaleOffsetTwoFocal* model) const {
     if (sample[0].size() < 4 || sample[1].size() < 4 || sample[2].size() < 7) {
         return;
     }
@@ -342,7 +342,7 @@ void HybridPoseTwoFocalEstimator3::LeastSquares(const std::vector<std::vector<in
     config.weight_sampson = sampson_squared_weight_;
     config.min_depth_constraint = est_config_.min_depth_constraint;
     config.solver_options.max_num_iterations = 25;
-    TwoFocalOptimizer3 optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
+    HybridTwoFocalPoseOptimizer optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
         *model, config);
     optim.SetUp();
     if (!optim.Solve()) 

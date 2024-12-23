@@ -206,7 +206,7 @@ int HybridPoseEstimator::NonMinimalSolver(const std::vector<std::vector<int>>& s
     config.weight_sampson = sampson_squared_weight_;
     config.min_depth_constraint = est_config_.min_depth_constraint;
     config.use_shift = est_config_.use_shift;
-    PoseScaleOffsetOptimizer3 optim(x0_, x1_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
+    HybridPoseOptimizer optim(x0_, x1_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
         *solution, K0_, K1_, config);
     optim.SetUp();
     if (!optim.Solve()) 
@@ -282,7 +282,7 @@ void HybridPoseEstimator::LeastSquares(const std::vector<std::vector<int>>& samp
     config.min_depth_constraint = est_config_.min_depth_constraint;
     config.use_shift = est_config_.use_shift;
 
-    PoseScaleOffsetOptimizer3 optim(x0_, x1_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
+    HybridPoseOptimizer optim(x0_, x1_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, 
         *model, K0_, K1_, config);
     optim.SetUp();
     if (!optim.Solve()) 
@@ -311,7 +311,7 @@ int HybridPoseEstimatorScaleOnly::NonMinimalSolver(const std::vector<std::vector
     if (est_config_.LO_type == EstimatorOption::EPI_ONLY)
         config.use_reprojection = false;
     config.weight_sampson = sampson_squared_weight_;
-    PoseAndScaleOptimizer3 optim(x0_, x1_, d0_, d1_, sample[0], sample[1], sample[2], 
+    HybridPoseOptimizerScaleOnly optim(x0_, x1_, d0_, d1_, sample[0], sample[1], sample[2], 
         *solution, K0_, K1_, config);
     optim.SetUp();
     if (!optim.Solve()) 
@@ -437,7 +437,7 @@ void HybridPoseEstimatorScaleOnly::LeastSquares(const std::vector<std::vector<in
     if (est_config_.LO_type == EstimatorOption::EPI_ONLY)
         config.use_reprojection = false;
     config.weight_sampson = sampson_squared_weight_;
-    PoseAndScaleOptimizer3 optim(x0_, x1_, d0_, d1_, sample[0], sample[1], sample[2], 
+    HybridPoseOptimizerScaleOnly optim(x0_, x1_, d0_, d1_, sample[0], sample[1], sample[2], 
         *model, K0_, K1_, config);
     optim.SetUp();
     if (!optim.Solve()) 
