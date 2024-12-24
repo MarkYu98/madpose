@@ -46,8 +46,8 @@ HybridEstimatePoseScaleOffsetSharedFocal(
     PoseScaleOffsetSharedFocal best_solution;
     ransac_lib::HybridRansacStatistics ransac_stats;
 
-    // HybridUncertaintyLOMSAC<PoseScaleOffsetSharedFocal, std::vector<PoseScaleOffsetSharedFocal>, HybridSharedFocalPoseEstimator> lomsac;
-    HybridUncertaintyLOMSAC<PoseScaleOffsetSharedFocal, std::vector<PoseScaleOffsetSharedFocal>, HybridSharedFocalPoseEstimator> lomsac;
+    // HybridLOMSAC<PoseScaleOffsetSharedFocal, std::vector<PoseScaleOffsetSharedFocal>, HybridSharedFocalPoseEstimator> lomsac;
+    HybridLOMSAC<PoseScaleOffsetSharedFocal, std::vector<PoseScaleOffsetSharedFocal>, HybridSharedFocalPoseEstimator> lomsac;
     lomsac.EstimateModel(ransac_options, solver, &best_solution, &ransac_stats);
 
     best_solution.focal *= norm_scale;

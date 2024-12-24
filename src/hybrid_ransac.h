@@ -25,11 +25,11 @@ class ExtendedHybridLORansacOptions : public ransac_lib::HybridLORansacOptions {
   int non_min_sample_multiplier_;
 };
 
-// Our customized RANSAC based on HybridLocallyOptimizedMSAC from RansacLib
+// Our customized hybrid-RANSAC based on HybridLocallyOptimizedMSAC from RansacLib
 // [LINK] https://github.com/tsattler/RansacLib/blob/master/RansacLib/hybrid_ransac.h
 template <class Model, class ModelVector, class HybridSolver,
           class Sampler = HybridUniformSampling<HybridSolver> >
-class HybridUncertaintyLOMSAC : public HybridRansacBase {
+class HybridLOMSAC : public HybridRansacBase {
  public:
   // Estimates a model using a given solver. Notice that the solver contains
   // all data and is responsible to implement a non-minimal solver and

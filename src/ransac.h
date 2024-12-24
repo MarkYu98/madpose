@@ -18,6 +18,9 @@ namespace madpose {
 // Implements LO-RANSAC with MSAC (top-hat) scoring, based on the description
 // provided in [Lebeda, Matas, Chum, Fixing the Locally Optimized RANSAC, BMVC
 // 2012]. Iteratively re-weighted least-squares optimization is optional.
+
+// We made small modifications based on LocallyOptimizedMSAC from RansacLib
+// [LINK] https://github.com/tsattler/RansacLib/blob/master/RansacLib/ransac.h
 template <class Model, class ModelVector, class Solver,
           class Sampler = UniformSampling<Solver> >
 class LocallyOptimizedMSAC : public RansacBase {

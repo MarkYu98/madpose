@@ -76,7 +76,7 @@ HybridEstimatePoseScaleOffsetTwoFocal(
     PoseScaleOffsetTwoFocal best_solution;
     ransac_lib::HybridRansacStatistics ransac_stats;
 
-    HybridUncertaintyLOMSAC<PoseScaleOffsetTwoFocal, std::vector<PoseScaleOffsetTwoFocal>, HybridTwoFocalPoseEstimator> lomsac;
+    HybridLOMSAC<PoseScaleOffsetTwoFocal, std::vector<PoseScaleOffsetTwoFocal>, HybridTwoFocalPoseEstimator> lomsac;
     lomsac.EstimateModel(ransac_options, solver, &best_solution, &ransac_stats);
 
     best_solution.focal0 *= norm_scale;

@@ -32,7 +32,7 @@ HybridEstimatePoseScaleOffset(const std::vector<Eigen::Vector2d> &x0, const std:
     PoseScaleOffset best_solution;
     ransac_lib::HybridRansacStatistics ransac_stats;
 
-    HybridUncertaintyLOMSAC<PoseScaleOffset, std::vector<PoseScaleOffset>, HybridPoseEstimator> lomsac;
+    HybridLOMSAC<PoseScaleOffset, std::vector<PoseScaleOffset>, HybridPoseEstimator> lomsac;
     lomsac.EstimateModel(ransac_options, solver, &best_solution, &ransac_stats);
 
     return std::make_pair(best_solution, ransac_stats);
@@ -62,7 +62,7 @@ HybridEstimatePoseAndScale(const std::vector<Eigen::Vector2d> &x0, const std::ve
     PoseAndScale best_solution;
     ransac_lib::HybridRansacStatistics ransac_stats;
 
-    HybridUncertaintyLOMSAC<PoseAndScale, std::vector<PoseAndScale>, HybridPoseEstimatorScaleOnly> lomsac;
+    HybridLOMSAC<PoseAndScale, std::vector<PoseAndScale>, HybridPoseEstimatorScaleOnly> lomsac;
     lomsac.EstimateModel(ransac_options, solver, &best_solution, &ransac_stats);
 
     return std::make_pair(best_solution, ransac_stats);
