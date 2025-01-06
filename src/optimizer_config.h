@@ -9,8 +9,8 @@ class OptimizerConfig {
 public:
     OptimizerConfig() {
         solver_options.function_tolerance = 1e-6;
-        solver_options.gradient_tolerance = 1e-10;
-        solver_options.parameter_tolerance = 1e-8;
+        solver_options.gradient_tolerance = 1e-8;
+        solver_options.parameter_tolerance = 1e-6;
         solver_options.minimizer_progress_to_stdout = true;
         solver_options.max_num_iterations = 100;
         solver_options.use_nonmonotonic_steps = true;
@@ -19,7 +19,7 @@ public:
     #if CERES_VERSION_MAJOR < 2
         solver_options.num_linear_solver_threads = -1;
     #endif  // CERES_VERSION_MAJOR
-        problem_options.loss_function_ownership = ceres::TAKE_OWNERSHIP;
+        problem_options.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         problem_options.cost_function_ownership = ceres::TAKE_OWNERSHIP;
     }
 
