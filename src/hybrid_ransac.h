@@ -479,22 +479,6 @@ class HybridLOMSAC : public HybridRansacBase {
         sample[t].push_back(idx);
       }
 
-      // std::vector<std::vector<int>> sample = inliers_base;
-      // // int non_min_sample_size = 0;
-      // // for (int i = 0; i < kNumDataTypes; ++i) {
-      // //   non_min_sample_size = std::max(non_min_sample_size, min_sample_sizes[solver_type][i]);
-      // // }
-      // // utils::RandomShuffleAndResize(non_min_sample_size * options.non_min_sample_multiplier_, rng, &sample[0]);
-      // // for (int i = 1; i < kNumDataTypes; ++i) {
-      // //   sample[i] = sample[0];
-      // // }
-      // for (int i = 0; i < kNumDataTypes; ++i) {
-      //   if (min_sample_sizes[solver_type][i] > 0) {
-      //     utils::RandomShuffleAndResize(
-      //       min_sample_sizes[solver_type][i] * options.non_min_sample_multiplier_, rng, &sample[i]);
-      //   }
-      // }
-
       Model m_non_min = m_init; // modified here
       if (!solver.NonMinimalSolver(sample, solver_type, &m_non_min)) continue;
 
@@ -539,9 +523,6 @@ class HybridLOMSAC : public HybridRansacBase {
     solver.num_data(&num_data);
 
     std::vector<std::vector<int>> inliers;
-    // for (int i = 0; i < sample_sizes.size(); i++) {
-    //   int num_inliers = GetInliers(solver, *model, thresholds, &inliers, i, true);
-    // }
     int num_inliers = GetInliers(solver, *model, thresholds, &inliers);
 
     const int kNumDataTypes = solver.num_data_types();
@@ -559,12 +540,6 @@ class HybridLOMSAC : public HybridRansacBase {
     }
 
     if (use_all_solver_inliers) {
-      // int sample_size = 0;
-      // for (int i = 0; i < kNumDataTypes; ++i) {
-      //   if (sample_sizes[solver_type][i] > 0)
-      //     sample_size += inliers[i].size() / 3;
-      // }
-      // utils::RandomShuffleAndResize(sample_size, rng, &inliers);
       solver.LeastSquares(inliers, solver_type, model);
     } 
     else {
@@ -594,43 +569,6 @@ class HybridLOMSAC : public HybridRansacBase {
       }
       solver.LeastSquares(sample, solver_type, model);
     }
-
-    // if (use_all_solver_inliers) {
-    //   inliers.clear();
-    //   GetInliers(solver, *model, thresholds, &inliers, -1, true);
-    //   if (solver_type == 0) {
-    //     inliers[2] = inliers[0];
-    //   }
-    //   // for (int i = 0; i < kNumDataTypes; ++i) {
-    //   //   if (sample_sizes[solver_type][i] > 0)
-    //   //     sample_sizes[solver_type][i] = inliers[i].size();
-    //   // }
-    //   // utils::RandomShuffleAndResize(sample_sizes[solver_type], rng, &inliers);
-    //   solver.LeastSquares(inliers, solver_type, model);
-    // } 
-    // else {
-    //   int num_sample = 0;
-    //   for (int i = 0; i < kNumDataTypes; ++i) {
-    //     num_sample = std::max(num_sample, sample_sizes[solver_type][i]);
-    //   }
-    //   if (false) {
-    //     utils::RandomShuffleAndResize(
-    //           num_sample * options.non_min_sample_multiplier_, rng, &inliers[0]);
-    //     for (int i = 1; i < kNumDataTypes; ++i) {
-    //       inliers[i] = inliers[0];
-    //     }
-    //   }
-    //   else {
-    //     for (int i = 0; i < inliers.size(); i++) {
-    //       // if (sample_sizes[solver_type][i] > 0) {
-    //         utils::RandomShuffleAndResize(
-    //           num_sample * options.non_min_sample_multiplier_, rng, &inliers[i]);
-    //       // }
-    //     }
-    //     inliers[1] = inliers[0];
-    //   }
-    //   solver.LeastSquares(inliers, solver_type, model);
-    // }
   }
 
   inline void UpdateBestModel(const double score_curr, const Model& m_curr,
