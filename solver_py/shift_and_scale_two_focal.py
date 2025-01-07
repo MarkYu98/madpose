@@ -1036,9 +1036,7 @@ def test_solver():
 
     sols = solve_shift_and_scale_two_focal(x1, x2, d1, d2)
     sols_mono = madpose.solve_scale_and_shift_two_focal(x1.T, x2.T, d1, d2)
-    madpose.estimate_scale_shift_pose_two_focal(
-        x1.T, x2.T, d1, d2
-    )
+    madpose.estimate_scale_shift_pose_two_focal(x1.T, x2.T, d1, d2)
 
     print(len(sols), len(sols_mono))
     for k, (a1, b1, a2, b2, f1, f2) in enumerate(sols + sols_mono):
