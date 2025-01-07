@@ -34,7 +34,11 @@ class CMakeBuild(build_ext):
         # Using this requires trailing slash for auto-detection & inclusion of
         # auxiliary "native" libs
 
-        debug = int(os.environ.get("DEBUG", 0)) if self.debug is None else self.debug
+        debug = (
+            int(os.environ.get("DEBUG", 0))
+            if self.debug is None
+            else self.debug
+        )
         cfg = "Debug" if debug else "Release"
 
         # CMake lets you override the generator - we need to check this.
@@ -53,7 +57,9 @@ class CMakeBuild(build_ext):
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
         if "CMAKE_ARGS" in os.environ:
-            cmake_args += [item for item in os.environ["CMAKE_ARGS"].split(" ") if item]
+            cmake_args += [
+                item for item in os.environ["CMAKE_ARGS"].split(" ") if item
+            ]
 
         # In this example, we pass in the version to C++. You might not need to.
         # cmake_args += [f"-DEXAMPLE_VERSION_INFO={self.distribution.get_version()}"]
@@ -69,7 +75,9 @@ class CMakeBuild(build_ext):
 
         else:
             # Single config generators are handled "normally"
-            single_config = any(x in cmake_generator for x in {"NMake", "Ninja"})
+            single_config = any(
+                x in cmake_generator for x in {"NMake", "Ninja"}
+            )
 
             # CMake allows an arch-in-generator style for backward compatibility
             contains_arch = any(x in cmake_generator for x in {"ARM", "Win64"})
@@ -91,7 +99,9 @@ class CMakeBuild(build_ext):
             # Cross-compile support for macOS - respect ARCHFLAGS if set
             archs = re.findall(r"-arch (\S+)", os.environ.get("ARCHFLAGS", ""))
             if archs:
-                cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
+                cmake_args += [
+                    "-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))
+                ]
 
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
@@ -121,7 +131,7 @@ setup(
     version="0.0.1",
     author="Yifan Yu",
     author_email="markyu98@outlook.com",
-    description='''Solvers and estimators described in the paper "Relative Pose Estimation through Affine Corrections of Monocular Depth Priors".''',
+    description="""Solvers and estimators described in the paper "Relative Pose Estimation through Affine Corrections of Monocular Depth Priors".""",
     long_description="",
     packages=find_packages(),
     ext_modules=[CMakeExtension("madpose")],
