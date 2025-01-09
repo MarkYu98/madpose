@@ -50,18 +50,18 @@ void bind_ransaclib(py::module &m) {
 
     py::class_<ransac_lib::LORansacOptions>(m, "LORansacOptions")
         .def(py::init<>())
-        .def_readwrite("min_num_iterations_", &ransac_lib::LORansacOptions::min_num_iterations_)
-        .def_readwrite("max_num_iterations_", &ransac_lib::LORansacOptions::max_num_iterations_)
-        .def_readwrite("success_probability_", &ransac_lib::LORansacOptions::success_probability_)
-        .def_readwrite("squared_inlier_threshold_", &ransac_lib::LORansacOptions::squared_inlier_threshold_)
-        .def_readwrite("random_seed_", &ransac_lib::LORansacOptions::random_seed_)
-        .def_readwrite("num_lo_steps_", &ransac_lib::LORansacOptions::num_lo_steps_)
-        .def_readwrite("threshold_multiplier_", &ransac_lib::LORansacOptions::threshold_multiplier_)
-        .def_readwrite("num_lsq_iterations_", &ransac_lib::LORansacOptions::num_lsq_iterations_)
-        .def_readwrite("min_sample_multiplicator_", &ransac_lib::LORansacOptions::min_sample_multiplicator_)
-        .def_readwrite("non_min_sample_multiplier_", &ransac_lib::LORansacOptions::non_min_sample_multiplier_)
-        .def_readwrite("lo_starting_iterations_", &ransac_lib::LORansacOptions::lo_starting_iterations_)
-        .def_readwrite("final_least_squares_", &ransac_lib::LORansacOptions::final_least_squares_);
+        .def_readwrite("min_num_iterations", &ransac_lib::LORansacOptions::min_num_iterations_)
+        .def_readwrite("max_num_iterations", &ransac_lib::LORansacOptions::max_num_iterations_)
+        .def_readwrite("success_probability", &ransac_lib::LORansacOptions::success_probability_)
+        .def_readwrite("squared_inlier_threshold", &ransac_lib::LORansacOptions::squared_inlier_threshold_)
+        .def_readwrite("random_seed", &ransac_lib::LORansacOptions::random_seed_)
+        .def_readwrite("num_lo_steps", &ransac_lib::LORansacOptions::num_lo_steps_)
+        .def_readwrite("threshold_multiplier", &ransac_lib::LORansacOptions::threshold_multiplier_)
+        .def_readwrite("num_lsq_iterations", &ransac_lib::LORansacOptions::num_lsq_iterations_)
+        .def_readwrite("min_sample_multiplicator", &ransac_lib::LORansacOptions::min_sample_multiplicator_)
+        .def_readwrite("non_min_sample_multiplier", &ransac_lib::LORansacOptions::non_min_sample_multiplier_)
+        .def_readwrite("lo_starting_iterations", &ransac_lib::LORansacOptions::lo_starting_iterations_)
+        .def_readwrite("final_least_squares", &ransac_lib::LORansacOptions::final_least_squares_);
 
     // hybrid ransac
     py::class_<ransac_lib::HybridRansacStatistics>(m, "HybridRansacStatistics")
@@ -77,20 +77,20 @@ void bind_ransaclib(py::module &m) {
 
     py::class_<ExtendedHybridLORansacOptions>(m, "HybridLORansacOptions")
         .def(py::init<>())
-        .def_readwrite("min_num_iterations_", &ExtendedHybridLORansacOptions::min_num_iterations_)
-        .def_readwrite("max_num_iterations_", &ExtendedHybridLORansacOptions::max_num_iterations_)
-        .def_readwrite("max_num_iterations_per_solver_", &ExtendedHybridLORansacOptions::max_num_iterations_per_solver_)
-        .def_readwrite("success_probability_", &ExtendedHybridLORansacOptions::success_probability_)
-        .def_readwrite("squared_inlier_thresholds_", &ExtendedHybridLORansacOptions::squared_inlier_thresholds_)
-        .def_readwrite("data_type_weights_", &ExtendedHybridLORansacOptions::data_type_weights_)
-        .def_readwrite("random_seed_", &ExtendedHybridLORansacOptions::random_seed_)
-        .def_readwrite("num_lo_steps_", &ExtendedHybridLORansacOptions::num_lo_steps_)
-        .def_readwrite("threshold_multiplier_", &ExtendedHybridLORansacOptions::threshold_multiplier_)
-        .def_readwrite("num_lsq_iterations_", &ExtendedHybridLORansacOptions::num_lsq_iterations_)
-        .def_readwrite("min_sample_multiplicator_", &ExtendedHybridLORansacOptions::min_sample_multiplicator_)
-        .def_readwrite("non_min_sample_multiplier_", &ExtendedHybridLORansacOptions::non_min_sample_multiplier_)
-        .def_readwrite("lo_starting_iterations_", &ExtendedHybridLORansacOptions::lo_starting_iterations_)
-        .def_readwrite("final_least_squares_", &ExtendedHybridLORansacOptions::final_least_squares_);
+        .def_readwrite("min_num_iterations", &ExtendedHybridLORansacOptions::min_num_iterations_)
+        .def_readwrite("max_num_iterations", &ExtendedHybridLORansacOptions::max_num_iterations_)
+        .def_readwrite("max_num_iterations_per_solver", &ExtendedHybridLORansacOptions::max_num_iterations_per_solver_)
+        .def_readwrite("success_probability", &ExtendedHybridLORansacOptions::success_probability_)
+        .def_readwrite("squared_inlier_thresholds", &ExtendedHybridLORansacOptions::squared_inlier_thresholds_)
+        .def_readwrite("data_type_weights", &ExtendedHybridLORansacOptions::data_type_weights_)
+        .def_readwrite("random_seed", &ExtendedHybridLORansacOptions::random_seed_)
+        .def_readwrite("num_lo_steps", &ExtendedHybridLORansacOptions::num_lo_steps_)
+        .def_readwrite("threshold_multiplier", &ExtendedHybridLORansacOptions::threshold_multiplier_)
+        .def_readwrite("num_lsq_iterations", &ExtendedHybridLORansacOptions::num_lsq_iterations_)
+        .def_readwrite("min_sample_multiplicator", &ExtendedHybridLORansacOptions::min_sample_multiplicator_)
+        .def_readwrite("non_min_sample_multiplier", &ExtendedHybridLORansacOptions::non_min_sample_multiplier_)
+        .def_readwrite("lo_starting_iterations", &ExtendedHybridLORansacOptions::lo_starting_iterations_)
+        .def_readwrite("final_least_squares", &ExtendedHybridLORansacOptions::final_least_squares_);
 }
 
 void bind_estimator(py::module &m) {
@@ -160,11 +160,11 @@ void bind_estimator(py::module &m) {
           "depth_x"_a, "depth_y"_a);
     m.def("solve_scale_and_shift_two_focal", &solve_scale_and_shift_two_focal, "x_homo"_a, "y_homo"_a, "depth_x"_a,
           "depth_y"_a);
-    m.def("estimate_scale_shift_pose", &estimate_scale_shift_pose_wrapper, "x_homo"_a, "y_homo"_a, "depth_x"_a,
+    m.def("solve_scale_shift_pose", &solve_scale_shift_pose_wrapper, "x_homo"_a, "y_homo"_a, "depth_x"_a,
           "depth_y"_a);
-    m.def("estimate_scale_shift_pose_shared_focal", &estimate_scale_shift_pose_shared_focal_wrapper, "x_homo"_a,
+    m.def("solve_scale_shift_pose_shared_focal", &solve_scale_shift_pose_shared_focal_wrapper, "x_homo"_a,
           "y_homo"_a, "depth_x"_a, "depth_y"_a);
-    m.def("estimate_scale_shift_pose_two_focal", &estimate_scale_shift_pose_two_focal_wrapper, "x_homo"_a, "y_homo"_a,
+    m.def("solve_scale_shift_pose_two_focal", &solve_scale_shift_pose_two_focal_wrapper, "x_homo"_a, "y_homo"_a,
           "depth_x"_a, "depth_y"_a);
     m.def("HybridEstimatePoseAndScale", &HybridEstimatePoseAndScale, "x0"_a, "x1"_a, "depth0"_a, "depth1"_a, "K0"_a,
           "K1"_a, "options"_a, "est_config"_a = EstimatorConfig());

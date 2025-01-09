@@ -37,6 +37,8 @@ if(${CERES_VERSION} VERSION_LESS "2.2.0")
     add_definitions("-DCERES_PARAMETERIZATION_ENABLED")
 endif()
 
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/madpose)
+
 add_subdirectory(ext/pybind11)
 
 include_directories(

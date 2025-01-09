@@ -12,9 +12,6 @@ HybridEstimatePoseScaleOffset(const std::vector<Eigen::Vector2d> &x0, const std:
                               const ExtendedHybridLORansacOptions &options, const EstimatorConfig &est_config) {
     ExtendedHybridLORansacOptions ransac_options(options);
 
-    std::random_device rand_dev;
-    ransac_options.random_seed_ = 0;
-
     // Change to "three data types"
     ransac_options.data_type_weights_[1] *=
         2 * ransac_options.squared_inlier_thresholds_[0] / ransac_options.squared_inlier_thresholds_[1];
@@ -43,9 +40,6 @@ HybridEstimatePoseAndScale(const std::vector<Eigen::Vector2d> &x0, const std::ve
                            const Eigen::Matrix3d &K0, const Eigen::Matrix3d &K1,
                            const ExtendedHybridLORansacOptions &options, const EstimatorConfig &est_config) {
     ExtendedHybridLORansacOptions ransac_options(options);
-
-    std::random_device rand_dev;
-    ransac_options.random_seed_ = 0;
 
     // Change to "three data types"
     ransac_options.data_type_weights_[1] *=
@@ -77,7 +71,7 @@ int HybridPoseEstimator::MinimalSolver(const std::vector<std::vector<int>> &samp
 
         std::vector<PoseScaleOffset> sols;
         if (est_config_.use_shift) {
-            int num_sols = estimate_scale_shift_pose(x0, x1, d0_(sample[0]), d1_(sample[0]), &sols, false);
+            int num_sols = solve_scale_shift_pose(x0, x1, d0_(sample[0]), d1_(sample[0]), &sols, false);
             for (int i = 0; i < num_sols; i++) {
                 if (!est_config_.min_depth_constraint ||
                     (sols[i].offset0 > -min_depth_(0) && sols[i].offset1 > -min_depth_(1) * sols[i].scale)) {

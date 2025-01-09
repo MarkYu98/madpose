@@ -479,7 +479,7 @@ std::vector<Eigen::Vector<double, 6>> solve_scale_and_shift_two_focal(const Eige
     return solutions;
 }
 
-int estimate_scale_shift_pose(const Eigen::Matrix3d &x_homo, const Eigen::Matrix3d &y_homo,
+int solve_scale_shift_pose(const Eigen::Matrix3d &x_homo, const Eigen::Matrix3d &y_homo,
                               const Eigen::Vector3d &depth_x, const Eigen::Vector3d &depth_y,
                               std::vector<PoseScaleOffset> *output, bool scale_on_x) {
     // X: 3 x 3, column vectors are homogeneous 2D points
@@ -534,7 +534,7 @@ int estimate_scale_shift_pose(const Eigen::Matrix3d &x_homo, const Eigen::Matrix
     return sol_count;
 }
 
-int estimate_scale_shift_pose_shared_focal(const Eigen::Matrix3x4d &x_homo, const Eigen::Matrix3x4d &y_homo,
+int solve_scale_shift_pose_shared_focal(const Eigen::Matrix3x4d &x_homo, const Eigen::Matrix3x4d &y_homo,
                                            const Eigen::Vector4d &depth_x, const Eigen::Vector4d &depth_y,
                                            std::vector<PoseScaleOffsetSharedFocal> *output, bool scale_on_x) {
     std::vector<Eigen::Vector<double, 5>> solutions;
@@ -593,7 +593,7 @@ int estimate_scale_shift_pose_shared_focal(const Eigen::Matrix3x4d &x_homo, cons
     return sol_count;
 }
 
-int estimate_scale_shift_pose_two_focal(const Eigen::Matrix3x4d &x_homo, const Eigen::Matrix3x4d &y_homo,
+int solve_scale_shift_pose_two_focal(const Eigen::Matrix3x4d &x_homo, const Eigen::Matrix3x4d &y_homo,
                                         const Eigen::Vector4d &depth_x, const Eigen::Vector4d &depth_y,
                                         std::vector<PoseScaleOffsetTwoFocal> *output, bool scale_on_x) {
     std::vector<Eigen::Vector<double, 6>> solutions;
@@ -652,30 +652,30 @@ int estimate_scale_shift_pose_two_focal(const Eigen::Matrix3x4d &x_homo, const E
     return sol_count;
 }
 
-std::vector<PoseScaleOffset> estimate_scale_shift_pose_wrapper(const Eigen::Matrix3d &x_homo,
+std::vector<PoseScaleOffset> solve_scale_shift_pose_wrapper(const Eigen::Matrix3d &x_homo,
                                                                const Eigen::Matrix3d &y_homo,
                                                                const Eigen::Vector3d &depth_x,
                                                                const Eigen::Vector3d &depth_y) {
     std::vector<PoseScaleOffset> output;
-    int sol_num = estimate_scale_shift_pose(x_homo, y_homo, depth_x, depth_y, &output);
+    int sol_num = solve_scale_shift_pose(x_homo, y_homo, depth_x, depth_y, &output);
     return output;
 }
 
-std::vector<PoseScaleOffsetSharedFocal> estimate_scale_shift_pose_shared_focal_wrapper(const Eigen::Matrix3x4d &x_homo,
+std::vector<PoseScaleOffsetSharedFocal> solve_scale_shift_pose_shared_focal_wrapper(const Eigen::Matrix3x4d &x_homo,
                                                                                        const Eigen::Matrix3x4d &y_homo,
                                                                                        const Eigen::Vector4d &depth_x,
                                                                                        const Eigen::Vector4d &depth_y) {
     std::vector<PoseScaleOffsetSharedFocal> output;
-    int sol_num = estimate_scale_shift_pose_shared_focal(x_homo, y_homo, depth_x, depth_y, &output);
+    int sol_num = solve_scale_shift_pose_shared_focal(x_homo, y_homo, depth_x, depth_y, &output);
     return output;
 }
 
-std::vector<PoseScaleOffsetTwoFocal> estimate_scale_shift_pose_two_focal_wrapper(const Eigen::Matrix3x4d &x_homo,
+std::vector<PoseScaleOffsetTwoFocal> solve_scale_shift_pose_two_focal_wrapper(const Eigen::Matrix3x4d &x_homo,
                                                                                  const Eigen::Matrix3x4d &y_homo,
                                                                                  const Eigen::Vector4d &depth_x,
                                                                                  const Eigen::Vector4d &depth_y) {
     std::vector<PoseScaleOffsetTwoFocal> output;
-    int sol_num = estimate_scale_shift_pose_two_focal(x_homo, y_homo, depth_x, depth_y, &output);
+    int sol_num = solve_scale_shift_pose_two_focal(x_homo, y_homo, depth_x, depth_y, &output);
     return output;
 }
 

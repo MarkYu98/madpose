@@ -265,8 +265,8 @@ def test_solver():
     d2 = (d2_gt - b2_gt) / a2_gt
 
     sols = solve_shift_and_scale(x1, x2, d1, d2)
-    sols_mono = madpose.solve_scale_and_shift(x1.T, x2.T, d1, d2)
-    posescaleoffsets = madpose.estimate_scale_shift_pose(x1.T, x2.T, d1, d2)
+    sols_madpose = madpose.solve_scale_and_shift(x1.T, x2.T, d1, d2)
+    posescaleoffsets = madpose.solve_scale_shift_pose(x1.T, x2.T, d1, d2)
     for p in posescaleoffsets:
         R_est, t_est = p.R(), p.t()
         a, b1, b2 = p.scale, p.offset0, p.offset1
@@ -277,7 +277,6 @@ def test_solver():
 
         X1 = x1 * d1_corr[:, None]
         X2 = x2 * d2_corr[:, None]
-        print(R_est @ X1.T + t_est[:, None] - X2.T)
 
         err_R = np.linalg.norm(R - R_est)
         err_t = np.linalg.norm(
@@ -287,12 +286,8 @@ def test_solver():
             f"posescaleoffsets, residual={err_a}, rotation={err_R}, translation={err_t}"
         )
 
-    for k, (a1, b1, a2, b2) in enumerate(sols + sols_mono):
-        err = (
-            np.abs(a2 - a2_gt / a1_gt)
-            + np.abs(b1 - b1_gt / a1_gt)
-            + np.abs(b2 - b2_gt / a1_gt)
-        )
+    for k, (a1, b1, a2, b2) in enumerate(sols + sols_madpose):
+        err = np.abs(a2 - a2_gt / a1_gt) + np.abs(b1 - b1_gt / a1_gt) + np.abs(b2 - b2_gt / a1_gt)
 
         d1_corr = a1 * d1 + b1
         d2_corr = a2 * d2 + b2

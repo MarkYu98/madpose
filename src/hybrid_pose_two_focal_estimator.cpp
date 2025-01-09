@@ -37,9 +37,6 @@ std::pair<PoseScaleOffsetTwoFocal, ransac_lib::HybridRansacStatistics> HybridEst
     const Eigen::Vector2d &pp1, const ExtendedHybridLORansacOptions &options, const EstimatorConfig &est_config) {
     ExtendedHybridLORansacOptions ransac_options(options);
 
-    std::random_device rand_dev;
-    ransac_options.random_seed_ = 0;
-
     std::vector<Eigen::Vector2d> x0_norm = x0;
     std::vector<Eigen::Vector2d> x1_norm = x1;
     for (int i = 0; i < x0.size(); i++) {
@@ -85,7 +82,7 @@ int HybridTwoFocalPoseEstimator::MinimalSolver(const std::vector<std::vector<int
         Eigen::Matrix3x4d x1 = x1_norm_(Eigen::all, sample[0]);
 
         std::vector<PoseScaleOffsetTwoFocal> sols;
-        int num_sols = estimate_scale_shift_pose_two_focal(x0, x1, d0_(sample[0]), d1_(sample[0]), &sols, false);
+        int num_sols = solve_scale_shift_pose_two_focal(x0, x1, d0_(sample[0]), d1_(sample[0]), &sols, false);
         for (int i = 0; i < num_sols; i++) {
             if (!est_config_.min_depth_constraint ||
                 (sols[i].offset0 > -min_depth_(0) && sols[i].offset1 > -min_depth_(1) * sols[i].scale)) {
