@@ -1,5 +1,6 @@
-import madpose
 import numpy as np
+
+import madpose
 
 
 def solve_shift_and_scale(x1, x2, d1, d2):
@@ -80,127 +81,16 @@ def solve_shift_and_scale(x1, x2, d1, d2):
         - 2 * d1[1] * d1[2] * x1[1].dot(x1[2])
     )
 
+    # fmt: off
     # Setup expanded equation system
-    coeff_ind0 = [
-        0,
-        6,
-        12,
-        1,
-        7,
-        13,
-        2,
-        8,
-        0,
-        6,
-        12,
-        14,
-        6,
-        0,
-        12,
-        1,
-        7,
-        13,
-        3,
-        9,
-        2,
-        8,
-        14,
-        15,
-        4,
-        10,
-        7,
-        1,
-        16,
-        13,
-        8,
-        2,
-        6,
-        12,
-        0,
-        14,
-        9,
-        3,
-        8,
-        14,
-        2,
-        15,
-        3,
-        9,
-        15,
-        4,
-        10,
-        16,
-        7,
-        13,
-        1,
-        5,
-        11,
-        10,
-        4,
-        17,
-        16,
-    ]
+    coeff_ind0 = [0, 6, 12, 1, 7, 13, 2, 8, 0, 6, 12, 14, 6, 0, 12, 1, 7, 13, 3, 9, 2, 8, 14, 15, 4, 10, 7,
+                  1, 16, 13, 8, 2, 6, 12, 0, 14, 9, 3, 8, 14, 2, 15, 3, 9, 15, 4, 10, 16, 7, 13, 1, 5, 11, 10, 4, 17, 16]
     coeff_ind1 = [11, 17, 5, 9, 15, 3, 5, 11, 17, 10, 16, 4, 11, 5, 17]
-    ind0 = [
-        0,
-        1,
-        9,
-        12,
-        13,
-        21,
-        24,
-        25,
-        26,
-        28,
-        29,
-        33,
-        39,
-        42,
-        47,
-        50,
-        52,
-        53,
-        60,
-        61,
-        62,
-        64,
-        65,
-        69,
-        72,
-        73,
-        75,
-        78,
-        81,
-        83,
-        87,
-        90,
-        91,
-        92,
-        94,
-        95,
-        99,
-        102,
-        103,
-        104,
-        106,
-        107,
-        110,
-        112,
-        113,
-        122,
-        124,
-        125,
-        127,
-        128,
-        130,
-        132,
-        133,
-        135,
-        138,
-        141,
-        143,
-    ]
+    ind0 = [0, 1, 9, 12, 13, 21, 24, 25, 26, 28, 29, 33, 39, 42, 47, 50, 52, 53, 60, 61, 62, 64, 65, 69, 72, 73, 75, 78, 81, 83, 87,
+            90, 91, 92, 94, 95, 99, 102, 103, 104, 106, 107, 110, 112, 113, 122, 124, 125, 127, 128, 130, 132, 133, 135, 138, 141, 143]
     ind1 = [7, 8, 10, 19, 20, 22, 26, 28, 29, 31, 32, 34, 39, 42, 47]
+
+    # fmt: on
     C0 = np.zeros((12, 12))
     C1 = np.zeros((12, 4))
     C0[np.unravel_index(ind0, (12, 12), "F")] = coeffs[coeff_ind0]
@@ -279,12 +169,8 @@ def test_solver():
         X2 = x2 * d2_corr[:, None]
 
         err_R = np.linalg.norm(R - R_est)
-        err_t = np.linalg.norm(
-            t / np.linalg.norm(t) - t_est / np.linalg.norm(t_est)
-        )
-        print(
-            f"posescaleoffsets, residual={err_a}, rotation={err_R}, translation={err_t}"
-        )
+        err_t = np.linalg.norm(t / np.linalg.norm(t) - t_est / np.linalg.norm(t_est))
+        print(f"posescaleoffsets, residual={err_a}, rotation={err_R}, translation={err_t}")
 
     for k, (a1, b1, a2, b2) in enumerate(sols + sols_madpose):
         err = np.abs(a2 - a2_gt / a1_gt) + np.abs(b1 - b1_gt / a1_gt) + np.abs(b2 - b2_gt / a1_gt)
@@ -298,12 +184,8 @@ def test_solver():
         R_est, t_est = find_transform(X1, X2)
 
         err_R = np.linalg.norm(R - R_est)
-        err_t = np.linalg.norm(
-            t / np.linalg.norm(t) - t_est / np.linalg.norm(t_est)
-        )
-        print(
-            f"solution={k}, residual={err}, rotation={err_R}, translation={err_t}"
-        )
+        err_t = np.linalg.norm(t / np.linalg.norm(t) - t_est / np.linalg.norm(t_est))
+        print(f"solution={k}, residual={err}, rotation={err_R}, translation={err_t}")
 
 
 if __name__ == "__main__":

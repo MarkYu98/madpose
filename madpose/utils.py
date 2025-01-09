@@ -3,7 +3,12 @@ import numpy as np
 
 def get_depths(image, depth_map, mkpts):
     # Calculate the scaling factor between the image and the depth map
-    resize = np.array([depth_map.shape[1] / image.shape[1], depth_map.shape[0] / image.shape[0]])
+    resize = np.array(
+        [
+            depth_map.shape[1] / image.shape[1],
+            depth_map.shape[0] / image.shape[0],
+        ]
+    )
 
     # Scale the keypoints to match the depth map's resolution and round to the nearest integer
     scaled_coords = np.round(mkpts * resize).astype(int)
@@ -32,17 +37,9 @@ def bougnoux_numpy(F, p1, p2):
     e2 = e2 / e2[2]
 
     # Skew-symmetric matrices for e1 and e2
-    s_e2 = np.array([
-        [0, -e2[2], e2[1]],
-        [e2[2], 0, -e2[0]],
-        [-e2[1], e2[0], 0]
-    ])
+    s_e2 = np.array([[0, -e2[2], e2[1]], [e2[2], 0, -e2[0]], [-e2[1], e2[0], 0]])
 
-    s_e1 = np.array([
-        [0, -e1[2], e1[1]],
-        [e1[2], 0, -e1[0]],
-        [-e1[1], e1[0], 0]
-    ])
+    s_e1 = np.array([[0, -e1[2], e1[1]], [e1[2], 0, -e1[0]], [-e1[1], e1[0], 0]])
 
     # Diagonal matrix II
     II = np.diag([1.0, 1.0, 0.0])
@@ -61,7 +58,7 @@ def bougnoux_numpy(F, p1, p2):
 
 def angle_error_mat(R1, R2):
     cos = (np.trace(np.dot(R1.T, R2)) - 1) / 2
-    cos = np.clip(cos, -1., 1.)  # numercial errors can make it out of bounds
+    cos = np.clip(cos, -1.0, 1.0)  # numercial errors can make it out of bounds
     return np.rad2deg(np.abs(np.arccos(cos)))
 
 

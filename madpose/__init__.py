@@ -1,1 +1,1 @@
-from .madpose import *
+from .madpose import *  # noqa
