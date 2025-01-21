@@ -119,6 +119,9 @@ setup(
     description="""Solvers and estimators described in the paper "Relative Pose Estimation through Affine Corrections of Monocular Depth Priors".""",
     long_description="",
     packages=find_packages(),
+    package_data={
+        "madpose": ["*.so"],  # Include .so files in the madpose package
+    },
     ext_modules=[CMakeExtension("madpose")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
