@@ -20,3 +20,8 @@ target_link_libraries(madpose PRIVATE
     Ceres::ceres 
     ${OpenCV_LIBS}
 )
+
+add_custom_command(TARGET madpose POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:madpose> ${CMAKE_SOURCE_DIR}/madpose
+    COMMENT "Copying madpose library to ${CMAKE_SOURCE_DIR}/madpose"
+)
