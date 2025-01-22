@@ -45,7 +45,7 @@ class CMakeBuild(build_ext):
         # EXAMPLE_VERSION_INFO shows you how to pass a value into the C++ code
         # from Python.
         cmake_args = [
-            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
+            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}{ext.name}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
         ]
@@ -119,9 +119,6 @@ setup(
     description="""Solvers and estimators described in the paper "Relative Pose Estimation through Affine Corrections of Monocular Depth Priors".""",
     long_description="",
     packages=find_packages(),
-    package_data={
-        "madpose": ["*.so"],  # Include .so files in the madpose package
-    },
     ext_modules=[CMakeExtension("madpose")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
