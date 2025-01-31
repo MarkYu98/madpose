@@ -21,28 +21,29 @@ namespace py = pybind11;
 namespace madpose {
 
 // -------- Triangulation functions from COLMAP 3.9 --------
-inline Eigen::Vector3d TriangulatePoint(const Eigen::Matrix3x4d &cam1_from_world,
-                                        const Eigen::Matrix3x4d &cam2_from_world, const Eigen::Vector2d &point1,
-                                        const Eigen::Vector2d &point2) {
-    Eigen::Matrix4d A;
+template <typename T>
+inline Eigen::Vector<T, 3> TriangulatePoint(const Eigen::Matrix<T, 3, 4> &cam1_from_world,
+                                            const Eigen::Matrix<T, 3, 4> &cam2_from_world,
+                                            const Eigen::Vector<T, 2> &point1, const Eigen::Vector<T, 2> &point2) {
+    Eigen::Matrix<T, 4, 4> A;
 
     A.row(0) = point1(0) * cam1_from_world.row(2) - cam1_from_world.row(0);
     A.row(1) = point1(1) * cam1_from_world.row(2) - cam1_from_world.row(1);
     A.row(2) = point2(0) * cam2_from_world.row(2) - cam2_from_world.row(0);
     A.row(3) = point2(1) * cam2_from_world.row(2) - cam2_from_world.row(1);
 
-    Eigen::JacobiSVD<Eigen::Matrix4d> svd(A, Eigen::ComputeFullV);
+    Eigen::JacobiSVD<Eigen::Matrix<T, 4, 4>> svd(A, Eigen::ComputeFullV);
 
     return svd.matrixV().col(3).hnormalized();
 }
 
-inline std::vector<Eigen::Vector3d> TriangulatePoints(const Eigen::Matrix3x4d &cam1_from_world,
-                                                      const Eigen::Matrix3x4d &cam2_from_world,
-                                                      const std::vector<Eigen::Vector2d> &points1,
-                                                      const std::vector<Eigen::Vector2d> &points2) {
+template <typename T>
+inline std::vector<Eigen::Vector<T, 3>>
+TriangulatePoints(const Eigen::Matrix<T, 3, 4> &cam1_from_world, const Eigen::Matrix<T, 3, 4> &cam2_from_world,
+                  const std::vector<Eigen::Vector<T, 2>> &points1, const std::vector<Eigen::Vector<T, 2>> &points2) {
     CHECK_EQ(points1.size(), points2.size());
 
-    std::vector<Eigen::Vector3d> points3D(points1.size());
+    std::vector<Eigen::Vector<T, 3>> points3D(points1.size());
 
     for (size_t i = 0; i < points3D.size(); ++i) {
         points3D[i] = TriangulatePoint(cam1_from_world, cam2_from_world, points1[i], points2[i]);
@@ -52,28 +53,31 @@ inline std::vector<Eigen::Vector3d> TriangulatePoints(const Eigen::Matrix3x4d &c
 }
 // ---------------------------------------------------------
 
-inline Eigen::Matrix3d to_essential_matrix(Eigen::Matrix3d R, Eigen::Vector3d t) {
-    Eigen::Matrix3d E;
+template <typename T>
+inline Eigen::Matrix<T, 3, 3> to_essential_matrix(Eigen::Matrix<T, 3, 3> R, Eigen::Vector<T, 3> t) {
+    Eigen::Matrix<T, 3, 3> E;
     E << 0.0, -t(2), t(1), t(2), 0.0, -t(0), -t(1), t(0), 0.0;
     E = E * R;
     return E;
 }
 
-inline double compute_sampson_error(const Eigen::Vector2d &x1, const Eigen::Vector2d &x2, const Eigen::Matrix3d &E) {
+template <typename T>
+inline T compute_sampson_error(const Eigen::Vector<T, 2> &x1, const Eigen::Vector<T, 2> &x2,
+                               const Eigen::Matrix<T, 3, 3> &E) {
     // For some reason this is a lot faster than just using nice Eigen
     // expressions...
-    const double Ex1_0 = E(0, 0) * x1(0) + E(0, 1) * x1(1) + E(0, 2);
-    const double Ex1_1 = E(1, 0) * x1(0) + E(1, 1) * x1(1) + E(1, 2);
-    const double Ex1_2 = E(2, 0) * x1(0) + E(2, 1) * x1(1) + E(2, 2);
+    const T Ex1_0 = E(0, 0) * x1(0) + E(0, 1) * x1(1) + E(0, 2);
+    const T Ex1_1 = E(1, 0) * x1(0) + E(1, 1) * x1(1) + E(1, 2);
+    const T Ex1_2 = E(2, 0) * x1(0) + E(2, 1) * x1(1) + E(2, 2);
 
-    const double Ex2_0 = E(0, 0) * x2(0) + E(1, 0) * x2(1) + E(2, 0);
-    const double Ex2_1 = E(0, 1) * x2(0) + E(1, 1) * x2(1) + E(2, 1);
-    // const double Ex2_2 = E(0, 2) * x2(0) + E(1, 2) * x2(1) + E(2, 2);
+    const T Ex2_0 = E(0, 0) * x2(0) + E(1, 0) * x2(1) + E(2, 0);
+    const T Ex2_1 = E(0, 1) * x2(0) + E(1, 1) * x2(1) + E(2, 1);
+    // const T Ex2_2 = E(0, 2) * x2(0) + E(1, 2) * x2(1) + E(2, 2);
 
-    const double C = x2(0) * Ex1_0 + x2(1) * Ex1_1 + Ex1_2;
-    const double Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
-    const double Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
-    const double r2 = C * C / (Cx + Cy);
+    const T C = x2(0) * Ex1_0 + x2(1) * Ex1_1 + Ex1_2;
+    const T Cx = Ex1_0 * Ex1_0 + Ex1_1 * Ex1_1;
+    const T Cy = Ex2_0 * Ex2_0 + Ex2_1 * Ex2_1;
+    const T r2 = C * C / (Cx + Cy);
 
     return r2;
 }

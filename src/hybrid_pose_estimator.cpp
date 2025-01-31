@@ -251,9 +251,8 @@ double HybridPoseEstimator::EvaluateModelOnPoint(const PoseScaleOffset &model, i
 
         Eigen::Matrix3d E = to_essential_matrix(model.R(), model.t());
 
-        double sampson_error = compute_sampson_error(x0_calib.head<2>(), x1_calib.head<2>(), E);
-        double loss_scale = 1.0 / (K0_(0, 0) + K0_(1, 1)) + 1.0 / (K1_(0, 0) + K1_(1, 1));
-        return sampson_error / std::pow(loss_scale, 2);
+        double sampson_error = compute_sampson_error<double>(x0_calib.head<2>(), x1_calib.head<2>(), E);
+        return sampson_error * sampson_loss_scale_;
     }
 }
 
@@ -407,9 +406,8 @@ double HybridPoseEstimatorScaleOnly::EvaluateModelOnPoint(const PoseAndScale &mo
 
         Eigen::Matrix3d E = to_essential_matrix(model.R(), model.t());
 
-        double sampson_error = compute_sampson_error(x0_calib.head<2>(), x1_calib.head<2>(), E);
-        double loss_scale = 1.0 / (K0_(0, 0) + K0_(1, 1)) + 1.0 / (K1_(0, 0) + K1_(1, 1));
-        return sampson_error / std::pow(loss_scale, 2);
+        double sampson_error = compute_sampson_error<double>(x0_calib.head<2>(), x1_calib.head<2>(), E);
+        return sampson_error * sampson_loss_scale_;
     }
 }
 

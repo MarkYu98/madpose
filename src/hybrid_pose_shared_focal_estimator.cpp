@@ -189,7 +189,7 @@ double HybridSharedFocalPoseEstimator::EvaluateModelOnPoint(const PoseScaleOffse
         Eigen::Matrix3d E = to_essential_matrix(model.R(), model.t());
         Eigen::Matrix3d F = K_inv.transpose() * E * K_inv;
 
-        double sampson_error = compute_sampson_error(x0_norm_.col(i).head<2>(), x1_norm_.col(i).head<2>(), F);
+        double sampson_error = compute_sampson_error<double>(x0_norm_.col(i).head<2>(), x1_norm_.col(i).head<2>(), F);
         return sampson_error;
     }
 }

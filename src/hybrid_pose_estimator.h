@@ -31,6 +31,9 @@ class HybridPoseEstimator {
             x0_.col(i) = x0[i].homogeneous();
             x1_.col(i) = x1[i].homogeneous();
         }
+
+        sampson_loss_scale_ = 1.0 / (K0_(0, 0) + K0_(1, 1)) + 1.0 / (K1_(0, 0) + K1_(1, 1));
+        sampson_loss_scale_ = 1.0 / std::pow(sampson_loss_scale_, 2);
     }
 
     ~HybridPoseEstimator() {}
@@ -88,6 +91,7 @@ class HybridPoseEstimator {
     Eigen::VectorXd d0_, d1_;
     Eigen::Vector2d min_depth_;
     double sampson_squared_weight_;
+    double sampson_loss_scale_;
 
     EstimatorConfig est_config_;
     std::vector<double> squared_inlier_thresholds_;
@@ -114,6 +118,9 @@ class HybridPoseEstimatorScaleOnly {
             x0_.col(i) = x0[i].homogeneous();
             x1_.col(i) = x1[i].homogeneous();
         }
+
+        sampson_loss_scale_ = 1.0 / (K0_(0, 0) + K0_(1, 1)) + 1.0 / (K1_(0, 0) + K1_(1, 1));
+        sampson_loss_scale_ = 1.0 / std::pow(sampson_loss_scale_, 2);
     }
 
     ~HybridPoseEstimatorScaleOnly() {}
