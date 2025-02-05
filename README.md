@@ -223,8 +223,8 @@ The estimators take `HybridLORansacOptions` and `EstimatorConfig` for related se
 import madpose
 
 options = madpose.HybridLORansacOptions()
-options.min_num_iterations = 1000
-options.max_num_iterations = 10000
+options.min_num_iterations = 100
+options.max_num_iterations = 1000
 options.success_probability = 0.9999
 options.random_seed = 0 # for reproducibility
 options.final_least_squares = True
@@ -240,7 +240,11 @@ est_config = madpose.EstimatorConfig()
 est_config.min_depth_constraint = True
 # if disabled, will model the depth with only scale (only applicable to the calibrated camera case)
 est_config.use_shift = True
+# best set to the number of PHYSICAL CPU cores
+est_config.ceres_num_threads = 8
 ```
+
+**Note on performance**: if speed is a primary concern, best set `est_config.ceres_num_threads` to the number of _physical_ CPU cores on your machine, also tune `options.min_num_iterations`, `options.max_num_iterations`, and `options.num_lo_steps` for trade-off between speed and accuracy. In addition, `export OPENBLAS_NUM_THREADS=1` to use single-thread dense solver in Ceres to avoid overheads due to the small-sized nature of the Jacobians.
 
 We provide a example image pairs and code snippets in [examples/](examples/) to test the hybrid estimators. More demos and evaluations will be added in the future. 
 
