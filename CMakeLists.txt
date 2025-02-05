@@ -8,6 +8,11 @@ if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
     message(FATAL_ERROR "GCC version needs to be at least 9.1")
 endif()
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+add_compile_options(-O3 -ffast-math -fno-associative-math -DNDEBUG)
+
 # Options
 option(FETCH_POSELIB "Whether to use PoseLib with FetchContent or with self-installed software" ON)
 
