@@ -3,6 +3,8 @@
 #include "pose.h"
 #include "utils.h"
 
+#include <ceres/rotation.h>
+
 namespace madpose {
 
 // *******************************************************************
@@ -25,11 +27,14 @@ struct LiftProjectionFunctor0 {
     template <typename T>
     bool operator()(const T *const o0, const T *const qvec, const T *const tvec, T *residuals) const {
         Eigen::Vector<T, 3> x3d = x0_calib_.cast<T>() * (x0_depth_ + o0[0]);
-        Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
+        // Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
         Eigen::Vector<T, 3> t = Eigen::Map<const Eigen::Vector<T, 3>>(tvec);
 
-        Eigen::Vector<T, 3> x3d_1 = R * x3d + t;
-        Eigen::Vector<T, 3> x1_hat = K1_ * x3d_1;
+        // Eigen::Vector<T, 3> x3d_1 = R * x3d + t;
+        Eigen::Vector<T, 3> x3d_1;
+        ceres::QuaternionRotatePoint(qvec, x3d.data(), x3d_1.data());
+
+        Eigen::Vector<T, 3> x1_hat = K1_ * (x3d_1 + t);
         x1_hat /= x1_hat[2];
         residuals[0] = x1_hat[0] - x1_[0];
         residuals[1] = x1_hat[1] - x1_[1];
@@ -58,10 +63,16 @@ struct LiftProjectionFunctor1 {
     bool operator()(const T *const scale, const T *const o1, const T *const qvec, const T *const tvec,
                     T *residuals) const {
         Eigen::Vector<T, 3> x3d = x1_calib_.cast<T>() * (x1_depth_ + o1[0]) * scale[0];
-        Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
+        // Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
         Eigen::Vector<T, 3> t = Eigen::Map<const Eigen::Vector<T, 3>>(tvec);
 
-        Eigen::Vector<T, 3> x3d_0 = R.transpose() * x3d - R.transpose() * t;
+        Eigen::Vector<T, 4> quat = NormalizeQuaternion<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
+        Eigen::Vector<T, 4> qvec_inv = {quat[0], -quat[1], -quat[2], -quat[3]};
+        Eigen::Vector<T, 3> x3d_1 = x3d - t;
+        Eigen::Vector<T, 3> x3d_0;
+        ceres::UnitQuaternionRotatePoint(qvec_inv.data(), x3d_1.data(), x3d_0.data());
+
+        // Eigen::Vector<T, 3> x3d_0 = R.transpose() * (x3d - t);
         Eigen::Vector<T, 3> x0_hat = K0_ * x3d_0;
         x0_hat /= x0_hat[2];
         residuals[0] = x0_hat[0] - x0_[0];
@@ -78,15 +89,12 @@ struct LiftProjectionFunctor1 {
 
 struct SampsonErrorFunctor {
   public:
-    SampsonErrorFunctor(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1, const Eigen::Matrix3d &K0,
-                        const Eigen::Matrix3d &K1, const double &sq_weight = 1.0)
-        : x0_(x0), x1_(x1), K0_(K0), K1_(K1), K0_inv_(K0.inverse()), K1_inv_(K1.inverse()),
-          weight_(std::sqrt(sq_weight)) {}
+    SampsonErrorFunctor(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1, const double &weight = 1.0)
+        : x0_(x0), x1_(x1), weight_(weight) {}
 
-    static ceres::CostFunction *Create(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1, const Eigen::Matrix3d &K0,
-                                       const Eigen::Matrix3d &K1, const double &sq_weight = 1.0) {
-        return (new ceres::AutoDiffCostFunction<SampsonErrorFunctor, 1, 4, 3>(
-            new SampsonErrorFunctor(x0, x1, K0, K1, sq_weight)));
+    static ceres::CostFunction *Create(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1,
+                                       const double &weight = 1.0) {
+        return (new ceres::AutoDiffCostFunction<SampsonErrorFunctor, 1, 4, 3>(new SampsonErrorFunctor(x0, x1, weight)));
     }
 
     template <typename T> bool operator()(const T *const qvec, const T *const tvec, T *residuals) const {
@@ -111,15 +119,12 @@ struct SampsonErrorFunctor {
         const T C = x2(0) * Ex1_0 + x2(1) * Ex1_1 + Ex1_2;
         const T r = C / Eigen::Vector<T, 4>(Ex1_0, Ex1_1, Ex2_0, Ex2_1).norm();
 
-        residuals[0] = r / (1.0 / (K0_(0, 0) + K0_(1, 1)) + 1.0 / (K1_(0, 0) + K1_(1, 1)));
-        residuals[0] *= weight_;
+        residuals[0] = r * weight_;
         return true;
     }
 
   private:
     const Eigen::Vector3d x0_, x1_;
-    const Eigen::Matrix3d K0_, K1_;
-    const Eigen::Matrix3d K0_inv_, K1_inv_;
     const double weight_;
 };
 
@@ -145,11 +150,14 @@ struct LiftProjectionSharedFocalFunctor0 {
         K << focal[0], T(0.0), T(0.0), T(0.0), focal[0], T(0.0), T(0.0), T(0.0), T(1.0);
         K_inv << T(1.0) / focal[0], T(0.0), T(0.0), T(0.0), T(1.0) / focal[0], T(0.0), T(0.0), T(0.0), T(1.0);
         Eigen::Vector<T, 3> x3d = (K_inv * x0_.cast<T>()) * (x0_depth_ + o0[0]);
-        Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
+        // Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
         Eigen::Vector<T, 3> t = Eigen::Map<const Eigen::Vector<T, 3>>(tvec);
 
-        Eigen::Vector<T, 3> x3d_1 = R * x3d + t;
-        Eigen::Vector<T, 3> x1_hat = K * x3d_1;
+        // Eigen::Vector<T, 3> x3d_1 = R * x3d + t;
+        Eigen::Vector<T, 3> x3d_1;
+        ceres::QuaternionRotatePoint(qvec, x3d.data(), x3d_1.data());
+
+        Eigen::Vector<T, 3> x1_hat = K * (x3d_1 + t);
         x1_hat /= x1_hat[2];
         residuals[0] = x1_hat[0] - x1_[0];
         residuals[1] = x1_hat[1] - x1_[1];
@@ -178,10 +186,16 @@ struct LiftProjectionSharedFocalFunctor1 {
         K << focal[0], T(0.0), T(0.0), T(0.0), focal[0], T(0.0), T(0.0), T(0.0), T(1.0);
         K_inv << T(1.0) / focal[0], T(0.0), T(0.0), T(0.0), T(1.0) / focal[0], T(0.0), T(0.0), T(0.0), T(1.0);
         Eigen::Vector<T, 3> x3d = (K_inv * x1_.cast<T>()) * (x1_depth_ + o1[0]) * scale[0];
-        Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
+        // Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
         Eigen::Vector<T, 3> t = Eigen::Map<const Eigen::Vector<T, 3>>(tvec);
 
-        Eigen::Vector<T, 3> x3d_0 = R.transpose() * x3d - R.transpose() * t;
+        Eigen::Vector<T, 4> quat = NormalizeQuaternion<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
+        Eigen::Vector<T, 4> qvec_inv = {quat[0], -quat[1], -quat[2], -quat[3]};
+        Eigen::Vector<T, 3> x3d_1 = x3d - t;
+        Eigen::Vector<T, 3> x3d_0;
+        ceres::UnitQuaternionRotatePoint(qvec_inv.data(), x3d_1.data(), x3d_0.data());
+
+        // Eigen::Vector<T, 3> x3d_0 = R.transpose() * (x3d - t);
         Eigen::Vector<T, 3> x0_hat = K * x3d_0;
         x0_hat /= x0_hat[2];
         residuals[0] = x0_hat[0] - x0_[0];
@@ -197,13 +211,13 @@ struct LiftProjectionSharedFocalFunctor1 {
 
 struct SampsonErrorSharedFocalFunctor {
   public:
-    SampsonErrorSharedFocalFunctor(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1, const double &sq_weight = 1.0)
-        : x0_(x0), x1_(x1), weight_(std::sqrt(sq_weight)) {}
+    SampsonErrorSharedFocalFunctor(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1, const double &weight = 1.0)
+        : x0_(x0), x1_(x1), weight_(weight) {}
 
     static ceres::CostFunction *Create(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1,
-                                       const double &sq_weight = 1.0) {
+                                       const double &weight = 1.0) {
         return (new ceres::AutoDiffCostFunction<SampsonErrorSharedFocalFunctor, 1, 4, 3, 1>(
-            new SampsonErrorSharedFocalFunctor(x0, x1, sq_weight)));
+            new SampsonErrorSharedFocalFunctor(x0, x1, weight)));
     }
 
     template <typename T>
@@ -263,11 +277,14 @@ struct LiftProjectionTwoFocalFunctor0 {
         K0_inv << T(1.0) / focal0[0], T(0.0), T(0.0), T(0.0), T(1.0) / focal0[0], T(0.0), T(0.0), T(0.0), T(1.0);
         K1 << focal1[0], T(0.0), T(0.0), T(0.0), focal1[0], T(0.0), T(0.0), T(0.0), T(1.0);
         Eigen::Vector<T, 3> x3d = (K0_inv * x0_.cast<T>()) * (x0_depth_ + o0[0]);
-        Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
+        // Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
         Eigen::Vector<T, 3> t = Eigen::Map<const Eigen::Vector<T, 3>>(tvec);
 
-        Eigen::Vector<T, 3> x3d_1 = R * x3d + t;
-        Eigen::Vector<T, 3> x1_hat = K1 * x3d_1;
+        Eigen::Vector<T, 3> x3d_1;
+        ceres::QuaternionRotatePoint(qvec, x3d.data(), x3d_1.data());
+
+        // Eigen::Vector<T, 3> x3d_1 = R * x3d + t;
+        Eigen::Vector<T, 3> x1_hat = K1 * (x3d_1 + t);
         x1_hat /= x1_hat[2];
         residuals[0] = x1_hat[0] - x1_[0];
         residuals[1] = x1_hat[1] - x1_[1];
@@ -296,10 +313,16 @@ struct LiftProjectionTwoFocalFunctor1 {
         K0 << focal0[0], T(0.0), T(0.0), T(0.0), focal0[0], T(0.0), T(0.0), T(0.0), T(1.0);
         K1_inv << T(1.0) / focal1[0], T(0.0), T(0.0), T(0.0), T(1.0) / focal1[0], T(0.0), T(0.0), T(0.0), T(1.0);
         Eigen::Vector<T, 3> x3d = (K1_inv * x1_.cast<T>()) * (x1_depth_ + o1[0]) * scale[0];
-        Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
+        // Eigen::Matrix<T, 3, 3> R = QuaternionToRotationMatrix<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
         Eigen::Vector<T, 3> t = Eigen::Map<const Eigen::Vector<T, 3>>(tvec);
 
-        Eigen::Vector<T, 3> x3d_0 = R.transpose() * x3d - R.transpose() * t;
+        Eigen::Vector<T, 4> quat = NormalizeQuaternion<T>(Eigen::Map<const Eigen::Vector<T, 4>>(qvec));
+        Eigen::Vector<T, 4> qvec_inv = {quat[0], -quat[1], -quat[2], -quat[3]};
+        Eigen::Vector<T, 3> x3d_1 = x3d - t;
+        Eigen::Vector<T, 3> x3d_0;
+        ceres::UnitQuaternionRotatePoint(qvec_inv.data(), x3d_1.data(), x3d_0.data());
+
+        // Eigen::Vector<T, 3> x3d_0 = R.transpose() * (x3d - t);
         Eigen::Vector<T, 3> x0_hat = K0 * x3d_0;
         x0_hat /= x0_hat[2];
         residuals[0] = x0_hat[0] - x0_[0];
@@ -315,13 +338,13 @@ struct LiftProjectionTwoFocalFunctor1 {
 
 struct SampsonErrorTwoFocalFunctor {
   public:
-    SampsonErrorTwoFocalFunctor(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1, const double &sq_weight = 1.0)
-        : x0_(x0), x1_(x1), weight_(std::sqrt(sq_weight)) {}
+    SampsonErrorTwoFocalFunctor(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1, const double &weight = 1.0)
+        : x0_(x0), x1_(x1), weight_(weight) {}
 
     static ceres::CostFunction *Create(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1,
-                                       const double &sq_weight = 1.0) {
+                                       const double &weight = 1.0) {
         return (new ceres::AutoDiffCostFunction<SampsonErrorTwoFocalFunctor, 1, 4, 3, 1, 1>(
-            new SampsonErrorTwoFocalFunctor(x0, x1, sq_weight)));
+            new SampsonErrorTwoFocalFunctor(x0, x1, weight)));
     }
 
     template <typename T>
