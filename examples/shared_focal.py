@@ -18,7 +18,8 @@ epipolar_weight = 1.0
 
 # Ransac Options and Estimator Configs
 options = madpose.HybridLORansacOptions()
-options.min_num_iterations = 1000
+options.min_num_iterations = 100
+options.max_num_iterations = 1000
 options.final_least_squares = True
 options.threshold_multiplier = 5.0
 options.num_lo_steps = 4
@@ -29,6 +30,7 @@ options.random_seed = 0
 est_config = madpose.EstimatorConfig()
 est_config.min_depth_constraint = True
 est_config.use_shift = True
+est_config.ceres_num_threads = 8
 
 # Read the image pair
 image0 = cv2.imread(os.path.join(sample_path, "image0.png"))
