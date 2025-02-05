@@ -95,6 +95,15 @@ class HybridPoseEstimator {
 
     EstimatorConfig est_config_;
     std::vector<double> squared_inlier_thresholds_;
+
+    void set_ceres_solver_options(ceres::Solver::Options &options) const {
+        options.function_tolerance = est_config_.ceres_function_tolerance;
+        options.gradient_tolerance = est_config_.ceres_gradient_tolerance;
+        options.parameter_tolerance = est_config_.ceres_parameter_tolerance;
+        options.max_num_iterations = est_config_.ceres_max_num_iterations;
+        options.use_nonmonotonic_steps = est_config_.ceres_use_nonmonotonic_steps;
+        options.num_threads = est_config_.ceres_num_threads;
+    }
 };
 
 class HybridPoseEstimatorScaleOnly {
@@ -176,9 +185,19 @@ class HybridPoseEstimatorScaleOnly {
     Eigen::MatrixXd x0_, x1_;
     Eigen::VectorXd d0_, d1_;
     double sampson_squared_weight_;
+    double sampson_loss_scale_;
 
     EstimatorConfig est_config_;
     std::vector<double> squared_inlier_thresholds_;
+
+    void set_ceres_solver_options(ceres::Solver::Options &options) const {
+        options.function_tolerance = est_config_.ceres_function_tolerance;
+        options.gradient_tolerance = est_config_.ceres_gradient_tolerance;
+        options.parameter_tolerance = est_config_.ceres_parameter_tolerance;
+        options.max_num_iterations = est_config_.ceres_max_num_iterations;
+        options.use_nonmonotonic_steps = est_config_.ceres_use_nonmonotonic_steps;
+        options.num_threads = est_config_.ceres_num_threads;
+    }
 };
 
 std::pair<PoseScaleOffset, ransac_lib::HybridRansacStatistics>

@@ -189,7 +189,7 @@ int HybridPoseEstimator::NonMinimalSolver(const std::vector<std::vector<int>> &s
     }
 
     OptimizerConfig config;
-    config.solver_options.max_num_iterations = 25;
+    set_ceres_solver_options(config.solver_options);
 
     config.use_sampson = true;
     config.use_reprojection = true;
@@ -264,6 +264,8 @@ void HybridPoseEstimator::LeastSquares(const std::vector<std::vector<int>> &samp
     }
 
     OptimizerConfig config;
+    set_ceres_solver_options(config.solver_options);
+
     config.use_sampson = true;
     config.use_reprojection = true;
     if (est_config_.LO_type == EstimatorOption::MD_ONLY)
@@ -295,7 +297,7 @@ int HybridPoseEstimatorScaleOnly::NonMinimalSolver(const std::vector<std::vector
     }
 
     OptimizerConfig config;
-    config.solver_options.max_num_iterations = 25;
+    set_ceres_solver_options(config.solver_options);
 
     config.use_sampson = true;
     config.use_reprojection = true;
@@ -419,10 +421,10 @@ void HybridPoseEstimatorScaleOnly::LeastSquares(const std::vector<std::vector<in
     }
 
     OptimizerConfig config;
+    set_ceres_solver_options(config.solver_options);
+
     config.use_sampson = true;
     config.use_reprojection = true;
-    config.solver_options.max_num_iterations = 25;
-
     if (est_config_.LO_type == EstimatorOption::MD_ONLY)
         config.use_sampson = false;
     if (est_config_.LO_type == EstimatorOption::EPI_ONLY)

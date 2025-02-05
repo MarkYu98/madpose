@@ -90,36 +90,15 @@ class HybridTwoFocalPoseEstimator {
     EstimatorConfig est_config_;
     std::vector<double> squared_inlier_thresholds_;
     double norm_scale_;
-};
 
-class HybridTwoFocalPoseEstimator3 : public HybridTwoFocalPoseEstimator {
-  public:
-    HybridTwoFocalPoseEstimator3(const std::vector<Eigen::Vector2d> &x0_norm,
-                                 const std::vector<Eigen::Vector2d> &x1_norm, const std::vector<double> &depth0,
-                                 const std::vector<double> &depth1, const Eigen::Vector2d &min_depth,
-                                 const double &norm_scale = 1.0, const double &sampson_squared_weight = 1.0,
-                                 const std::vector<double> &squared_inlier_thresholds = {},
-                                 const EstimatorConfig &est_config = EstimatorConfig())
-        : HybridTwoFocalPoseEstimator(x0_norm, x1_norm, depth0, depth1, min_depth, norm_scale, sampson_squared_weight,
-                                      squared_inlier_thresholds, est_config) {}
-
-    int MinimalSolver(const std::vector<std::vector<int>> &sample, const int solver_idx,
-                      std::vector<PoseScaleOffsetTwoFocal> *models) const {
-        std::vector<std::vector<int>> sample_2 = {sample[0], sample[2]};
-        return HybridTwoFocalPoseEstimator::MinimalSolver(sample_2, solver_idx, models);
+     void set_ceres_solver_options(ceres::Solver::Options &options) const {
+        options.function_tolerance = est_config_.ceres_function_tolerance;
+        options.gradient_tolerance = est_config_.ceres_gradient_tolerance;
+        options.parameter_tolerance = est_config_.ceres_parameter_tolerance;
+        options.max_num_iterations = est_config_.ceres_max_num_iterations;
+        options.use_nonmonotonic_steps = est_config_.ceres_use_nonmonotonic_steps;
+        options.num_threads = est_config_.ceres_num_threads;
     }
-
-    // Returns 0 if no model could be estimated and 1 otherwise.
-    // Implemented by a simple linear least squares solver.
-    int NonMinimalSolver(const std::vector<std::vector<int>> &sample, const int solver_idx,
-                         PoseScaleOffsetTwoFocal *model) const;
-
-    // Evaluates the line on the i-th data point.
-    double EvaluateModelOnPoint(const PoseScaleOffsetTwoFocal &model, int t, int i, bool is_for_inlier = false) const;
-
-    // Linear least squares solver.
-    void LeastSquares(const std::vector<std::vector<int>> &sample, const int solver_idx,
-                      PoseScaleOffsetTwoFocal *model) const;
 };
 
 std::pair<PoseScaleOffsetTwoFocal, ransac_lib::HybridRansacStatistics> HybridEstimatePoseScaleOffsetTwoFocal(

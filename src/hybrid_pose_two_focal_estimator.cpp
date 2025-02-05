@@ -182,7 +182,8 @@ int HybridTwoFocalPoseEstimator::NonMinimalSolver(const std::vector<std::vector<
     }
 
     TwoFocalOptimizerConfig config;
-    config.solver_options.max_num_iterations = 25;
+    set_ceres_solver_options(config.solver_options);
+
     config.use_sampson = true;
     config.use_reprojection = true;
     if (est_config_.LO_type == EstimatorOption::MD_ONLY)
@@ -254,16 +255,16 @@ void HybridTwoFocalPoseEstimator::LeastSquares(const std::vector<std::vector<int
     }
 
     TwoFocalOptimizerConfig config;
+    set_ceres_solver_options(config.solver_options);
+
     config.use_sampson = true;
     config.use_reprojection = true;
-
     if (est_config_.LO_type == EstimatorOption::MD_ONLY)
         config.use_sampson = false;
     if (est_config_.LO_type == EstimatorOption::EPI_ONLY)
         config.use_reprojection = false;
     config.weight_sampson = sampson_squared_weight_;
     config.min_depth_constraint = est_config_.min_depth_constraint;
-    config.solver_options.max_num_iterations = 25;
     HybridTwoFocalPoseOptimizer optim(x0_norm_, x1_norm_, d0_, d1_, sample[0], sample[1], sample[2], min_depth_, *model,
                                       config);
     optim.SetUp();

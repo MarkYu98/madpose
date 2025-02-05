@@ -13,7 +13,7 @@ class OptimizerConfig {
         solver_options.minimizer_progress_to_stdout = true;
         solver_options.max_num_iterations = 100;
         solver_options.use_nonmonotonic_steps = true;
-        solver_options.num_threads = -1;
+        solver_options.num_threads = 1;
         solver_options.logging_type = ceres::SILENT;
         problem_options.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
         problem_options.cost_function_ownership = ceres::TAKE_OWNERSHIP;

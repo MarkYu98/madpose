@@ -114,7 +114,6 @@ class HybridPoseOptimizer {
         ceres::Solver::Options solver_options = config_.solver_options;
 
         solver_options.linear_solver_type = ceres::DENSE_QR;
-        solver_options.num_threads = 1;
 
         std::string solver_error;
         CHECK(solver_options.IsValid(&solver_error)) << solver_error;
@@ -229,7 +228,6 @@ class HybridPoseOptimizerScaleOnly {
         ceres::Solver::Options solver_options = config_.solver_options;
 
         solver_options.linear_solver_type = ceres::DENSE_QR;
-        solver_options.num_threads = 1;
 
         std::string solver_error;
         CHECK(solver_options.IsValid(&solver_error)) << solver_error;
@@ -354,7 +352,6 @@ class HybridSharedFocalPoseOptimizer {
         ceres::Solver::Options solver_options = config_.solver_options;
 
         solver_options.linear_solver_type = ceres::DENSE_QR;
-        solver_options.num_threads = 1;
 
         std::string solver_error;
         CHECK(solver_options.IsValid(&solver_error)) << solver_error;
@@ -485,7 +482,6 @@ class HybridTwoFocalPoseOptimizer {
         ceres::Solver::Options solver_options = config_.solver_options;
 
         solver_options.linear_solver_type = ceres::DENSE_QR;
-        solver_options.num_threads = 1;
 
         std::string solver_error;
         CHECK(solver_options.IsValid(&solver_error)) << solver_error;

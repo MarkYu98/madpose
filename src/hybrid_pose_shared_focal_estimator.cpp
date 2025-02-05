@@ -130,8 +130,10 @@ int HybridSharedFocalPoseEstimator::NonMinimalSolver(const std::vector<std::vect
     if ((sample[0].size() < 4 && sample[1].size() < 4) || sample[2].size() < 6) {
         return 0;
     }
+
     SharedFocalOptimizerConfig config;
-    config.solver_options.max_num_iterations = 25;
+    set_ceres_solver_options(config.solver_options);
+
     config.use_sampson = true;
     config.use_reprojection = true;
     if (est_config_.LO_type == EstimatorOption::MD_ONLY)
@@ -202,10 +204,10 @@ void HybridSharedFocalPoseEstimator::LeastSquares(const std::vector<std::vector<
     }
 
     SharedFocalOptimizerConfig config;
+    set_ceres_solver_options(config.solver_options);
+
     config.use_sampson = true;
     config.use_reprojection = true;
-    config.solver_options.max_num_iterations = 25;
-
     if (est_config_.LO_type == EstimatorOption::MD_ONLY)
         config.use_sampson = false;
     if (est_config_.LO_type == EstimatorOption::EPI_ONLY)

@@ -23,6 +23,13 @@ class EstimatorConfig {
 
     bool min_depth_constraint = true;
     bool use_shift = true;
+
+    double ceres_function_tolerance = 1e-6;
+    double ceres_gradient_tolerance = 1e-8;
+    double ceres_parameter_tolerance = 1e-6;
+    double ceres_max_num_iterations = 25;
+    bool ceres_use_nonmonotonic_steps = true;
+    int ceres_num_threads = 1;
 };
 
 } // namespace madpose

@@ -94,20 +94,17 @@ void bind_ransaclib(py::module &m) {
 }
 
 void bind_estimator(py::module &m) {
-    py::class_<OptimizerConfig>(m, "OptimizerConfig")
-        .def(py::init<>())
-        .def_readwrite("constant_pose", &OptimizerConfig::constant_pose)
-        .def_readwrite("constant_scale", &OptimizerConfig::constant_scale)
-        .def_readwrite("constant_offset", &OptimizerConfig::constant_offset)
-        .def_readwrite("solver_options", &OptimizerConfig::solver_options)
-        .def_readwrite("min_depth_constraint", &OptimizerConfig::min_depth_constraint)
-        .def_readwrite("use_shift", &OptimizerConfig::use_shift);
-
     py::class_<EstimatorConfig>(m, "EstimatorConfig")
         .def(py::init<>())
         .def(py::init<int, int, int>(), "solver"_a = 0, "score"_a = 0, "LO"_a = 0)
         .def_readwrite("min_depth_constraint", &EstimatorConfig::min_depth_constraint)
-        .def_readwrite("use_shift", &EstimatorConfig::use_shift);
+        .def_readwrite("use_shift", &EstimatorConfig::use_shift)
+        .def_readwrite("ceres_function_tolerance", &EstimatorConfig::ceres_function_tolerance)
+        .def_readwrite("ceres_gradient_tolerance", &EstimatorConfig::ceres_gradient_tolerance)
+        .def_readwrite("ceres_parameter_tolerance", &EstimatorConfig::ceres_parameter_tolerance)
+        .def_readwrite("ceres_max_num_iterations", &EstimatorConfig::ceres_max_num_iterations)
+        .def_readwrite("ceres_use_nonmonotonic_steps", &EstimatorConfig::ceres_use_nonmonotonic_steps)
+        .def_readwrite("ceres_num_threads", &EstimatorConfig::ceres_num_threads);
 
     py::class_<PoseAndScale>(m, "PoseAndScale")
         .def(py::init<>())

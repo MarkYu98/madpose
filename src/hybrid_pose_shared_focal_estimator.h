@@ -92,6 +92,15 @@ class HybridSharedFocalPoseEstimator {
 
     std::vector<double> squared_inlier_thresholds_;
     double norm_scale_;
+
+    void set_ceres_solver_options(ceres::Solver::Options &options) const {
+        options.function_tolerance = est_config_.ceres_function_tolerance;
+        options.gradient_tolerance = est_config_.ceres_gradient_tolerance;
+        options.parameter_tolerance = est_config_.ceres_parameter_tolerance;
+        options.max_num_iterations = est_config_.ceres_max_num_iterations;
+        options.use_nonmonotonic_steps = est_config_.ceres_use_nonmonotonic_steps;
+        options.num_threads = est_config_.ceres_num_threads;
+    }
 };
 
 std::pair<PoseScaleOffsetSharedFocal, ransac_lib::HybridRansacStatistics> HybridEstimatePoseScaleOffsetSharedFocal(
