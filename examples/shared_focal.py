@@ -108,7 +108,9 @@ ransac_opt_dict = {
     "min_iterations": 1000,
     "max_iterations": 10000,
 }
-img_pair, stats = poselib.estimate_shared_focal_relative_pose(mkpts0, mkpts1, pp, ransac_opt_dict)
+img_pair, stats = poselib.estimate_shared_focal_relative_pose(
+    mkpts0, mkpts1, pp, ransac_opt_dict, {}
+)
 shared_focal_pose = img_pair.pose
 R_ponly, t_ponly = shared_focal_pose.R, shared_focal_pose.t
 f_ponly = img_pair.camera1.focal()

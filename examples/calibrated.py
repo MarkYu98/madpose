@@ -110,7 +110,7 @@ cam1_dict = {
 }
 
 pose_ponly, stats = poselib.estimate_relative_pose(
-    mkpts0, mkpts1, cam0_dict, cam1_dict, ransac_opt_dict
+    mkpts0, mkpts1, cam0_dict, cam1_dict, ransac_opt_dict, {}
 )
 R_ponly, t_ponly = pose_ponly.R, pose_ponly.t
 

@@ -109,7 +109,7 @@ ransac_opt_dict = {
     "max_iterations": 10000,
 }
 
-F, stats = poselib.estimate_fundamental(mkpts0, mkpts1, ransac_opt_dict)
+F, stats = poselib.estimate_fundamental(mkpts0, mkpts1, ransac_opt_dict, {})
 f0, f1 = bougnoux_numpy(F, pp0, pp1)
 f0_ponly, f1_ponly = np.sqrt(np.abs(f0)), np.sqrt(np.abs(f1))
 
